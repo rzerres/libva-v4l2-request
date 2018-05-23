@@ -43,8 +43,10 @@
 #include "media.h"
 #include "utils.h"
 
-VAStatus SunxiCedrusCreateSurfaces(VADriverContextP context, int width,
-	int height, int format, int surfaces_count, VASurfaceID *surfaces_ids)
+VAStatus SunxiCedrusCreateSurfaces2(VADriverContextP context,
+	unsigned int format, unsigned int width, unsigned int height,
+	VASurfaceID *surfaces_ids, unsigned int surfaces_count,
+	VASurfaceAttrib *attributes, unsigned int attributes_count)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -106,6 +108,12 @@ VAStatus SunxiCedrusCreateSurfaces(VADriverContextP context, int width,
 	}
 
 	return VA_STATUS_SUCCESS;
+}
+
+VAStatus SunxiCedrusCreateSurfaces(VADriverContextP context, int width,
+	int height, int format, int surfaces_count, VASurfaceID *surfaces_ids)
+{
+	return SunxiCedrusCreateSurfaces2(context, format, width, height, surfaces_ids, surfaces_count, NULL, 0);
 }
 
 VAStatus SunxiCedrusDestroySurfaces(VADriverContextP context,
