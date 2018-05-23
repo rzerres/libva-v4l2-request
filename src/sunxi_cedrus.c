@@ -121,7 +121,10 @@ VAStatus VA_DRIVER_INIT_FUNC(VADriverContextP context)
 	vtable->vaSetDisplayAttributes = SunxiCedrusSetDisplayAttributes;
 	vtable->vaLockSurface = SunxiCedrusLockSurface;
 	vtable->vaUnlockSurface = SunxiCedrusUnlockSurface;
+	vtable->vaExportSurfaceHandle = SunxiCedrusExportSurfaceHandle;
 	vtable->vaBufferInfo = SunxiCedrusBufferInfo;
+	vtable->vaAcquireBufferHandle = SunxiCedrusAcquireBufferHandle;
+	vtable->vaReleaseBufferHandle = SunxiCedrusReleaseBufferHandle;
 
 	driver_data = (struct sunxi_cedrus_driver_data *) malloc(sizeof(*driver_data));
 	memset(driver_data, 0, sizeof(*driver_data));

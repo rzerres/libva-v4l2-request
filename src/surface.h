@@ -80,5 +80,8 @@ VAStatus SunxiCedrusLockSurface(VADriverContextP context,
 	void **buffer);
 VAStatus SunxiCedrusUnlockSurface(VADriverContextP context,
 	VASurfaceID surface_id);
+VAStatus SunxiCedrusExportSurfaceHandle(VADriverContextP context,
+	VASurfaceID surface_id, uint32_t mem_type, uint32_t flags,
+	void *descriptor);
 
 #endif

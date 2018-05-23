@@ -291,11 +291,24 @@ VAStatus SunxiCedrusLockSurface(VADriverContextP context,
 	unsigned int *luma_offset, unsigned int *chroma_u_offset,
 	unsigned int *chroma_v_offset, unsigned int *buffer_name, void **buffer)
 {
+	fprintf(stderr, "%s()\n", __func__);
+
 	return VA_STATUS_ERROR_UNIMPLEMENTED;
 }
 
 VAStatus SunxiCedrusUnlockSurface(VADriverContextP context,
 	VASurfaceID surface_id)
 {
+	fprintf(stderr, "%s()\n", __func__);
+
 	return VA_STATUS_ERROR_UNIMPLEMENTED;
+}
+
+VAStatus SunxiCedrusExportSurfaceHandle(VADriverContextP context,
+	VASurfaceID surface_id, uint32_t mem_type, uint32_t flags,
+	void *descriptor)
+{
+	fprintf(stderr, "%s()\n", __func__);
+
+	return VA_STATUS_SUCCESS;
 }

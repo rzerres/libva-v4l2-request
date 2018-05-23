@@ -59,5 +59,9 @@ VAStatus SunxiCedrusBufferSetNumElements(VADriverContextP context,
 	VABufferID buffer_id, unsigned int count);
 VAStatus SunxiCedrusBufferInfo(VADriverContextP context, VABufferID buffer_id,
 	VABufferType *type, unsigned int *size, unsigned int *count);
+VAStatus SunxiCedrusAcquireBufferHandle(VADriverContextP context,
+	VABufferID buffer_id, VABufferInfo *buffer_info);
+VAStatus SunxiCedrusReleaseBufferHandle(VADriverContextP context,
+	VABufferID buffer_id);
 
 #endif

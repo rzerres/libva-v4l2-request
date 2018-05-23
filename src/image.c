@@ -129,6 +129,8 @@ VAStatus SunxiCedrusDeriveImage(VADriverContextP context,
 	if (buffer_object == NULL)
 		return VA_STATUS_ERROR_INVALID_BUFFER;
 
+	fprintf(stderr, "%s()\n", __func__);
+
 	/* TODO: Use an appropriate DRM plane instead */
 	tiled_to_planar(surface_object->destination_data[0], buffer_object->data, image->pitches[0], image->width, image->height);
 	tiled_to_planar(surface_object->destination_data[1], buffer_object->data + image->width*image->height, image->pitches[1], image->width, image->height/2);

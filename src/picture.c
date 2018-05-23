@@ -194,6 +194,8 @@ VAStatus SunxiCedrusEndPicture(VADriverContextP context,
 
 	surface_object->slices_size = 0;
 
+	fprintf(stderr, "%s()\n", __func__);
+
 	status = SunxiCedrusSyncSurface(context, context_object->render_surface_id);
 	if (status != VA_STATUS_SUCCESS)
 		return status;

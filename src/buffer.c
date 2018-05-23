@@ -185,3 +185,35 @@ VAStatus SunxiCedrusBufferInfo(VADriverContextP context, VABufferID buffer_id,
 
 	return VA_STATUS_SUCCESS;
 }
+
+VAStatus SunxiCedrusAcquireBufferHandle(VADriverContextP context,
+	VABufferID buffer_id, VABufferInfo *buffer_info)
+{
+	struct sunxi_cedrus_driver_data *driver_data =
+		(struct sunxi_cedrus_driver_data *) context->pDriverData;
+	struct object_buffer *buffer_object;
+
+	buffer_object = BUFFER(buffer_id);
+	if (buffer_object == NULL)
+		return VA_STATUS_ERROR_INVALID_BUFFER;
+
+	fprintf(stderr, "%s()\n", __func__);
+
+	return VA_STATUS_SUCCESS;
+}
+
+VAStatus SunxiCedrusReleaseBufferHandle(VADriverContextP context,
+	VABufferID buffer_id)
+{
+	struct sunxi_cedrus_driver_data *driver_data =
+		(struct sunxi_cedrus_driver_data *) context->pDriverData;
+	struct object_buffer *buffer_object;
+
+	buffer_object = BUFFER(buffer_id);
+	if (buffer_object == NULL)
+		return VA_STATUS_ERROR_INVALID_BUFFER;
+
+	fprintf(stderr, "%s()\n", __func__);
+
+	return VA_STATUS_SUCCESS;
+}
