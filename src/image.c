@@ -28,6 +28,7 @@
 #include "surface.h"
 #include "buffer.h"
 
+#include <stdio.h>
 #include <assert.h>
 #include <string.h>
 
@@ -121,6 +122,8 @@ VAStatus SunxiCedrusDeriveImage(VADriverContextP context,
 
 	format.fourcc = VA_FOURCC_NV12;
 
+	fprintf(stderr, "%s()\n", __func__);
+
 	status = SunxiCedrusCreateImage(context, &format, surface_object->width, surface_object->height, image);
 	if (status != VA_STATUS_SUCCESS)
 		return status;
@@ -128,8 +131,6 @@ VAStatus SunxiCedrusDeriveImage(VADriverContextP context,
 	buffer_object = BUFFER(image->buf);
 	if (buffer_object == NULL)
 		return VA_STATUS_ERROR_INVALID_BUFFER;
-
-	fprintf(stderr, "%s()\n", __func__);
 
 	/* TODO: Use an appropriate DRM plane instead */
 	tiled_to_planar(surface_object->destination_data[0], buffer_object->data, image->pitches[0], image->width, image->height);

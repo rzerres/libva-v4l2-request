@@ -32,6 +32,7 @@
 
 #include "mpeg2.h"
 
+#include <stdio.h>
 #include <assert.h>
 #include <string.h>
 
