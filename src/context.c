@@ -62,17 +62,13 @@ VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 	int rc;
 
 	config_object = CONFIG(config_id);
-	if (config_object == NULL) {
-		status = VA_STATUS_ERROR_INVALID_CONFIG;
-		goto error;
-	}
+	if (config_object == NULL)
+		return VA_STATUS_ERROR_INVALID_CONFIG;
 
 	id = object_heap_allocate(&driver_data->context_heap);
 	context_object = CONTEXT(id);
-	if (context_object == NULL) {
-		status = VA_STATUS_ERROR_ALLOCATION_FAILED;
-		goto error;
-	}
+	if (context_object == NULL)
+		return VA_STATUS_ERROR_ALLOCATION_FAILED;
 
 	switch (config_object->profile) {
 		case VAProfileMPEG2Simple:
@@ -81,32 +77,32 @@ VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 			break;
 
 		default:
-			return VA_STATUS_ERROR_UNSUPPORTED_PROFILE;
+			goto err_free_context_object;
 	}
 
 	rc = v4l2_set_format(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, pixelformat, picture_width, picture_height);
 	if (rc < 0) {
 		status = VA_STATUS_ERROR_OPERATION_FAILED;
-		goto error;
+		goto err_free_context_object;
 	}
 
 	rc = v4l2_create_buffers(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, surfaces_count);
 	if (rc < 0) {
 		status = VA_STATUS_ERROR_ALLOCATION_FAILED;
-		goto error;
+		goto err_free_context_object;
 	}
 
 	ids = malloc(surfaces_count * sizeof(VASurfaceID));
 	if (ids == NULL) {
 		status = VA_STATUS_ERROR_ALLOCATION_FAILED;
-		goto error;
+		goto err_free_context_object;
 	}
 
 	for (i = 0; i < surfaces_count; i++) {
 		surface_object = SURFACE(surfaces_ids[i]);
 		if (surface_object == NULL) {
 			status = VA_STATUS_ERROR_INVALID_SURFACE;
-			goto error;
+			goto err_surface;
 		}
 
 		if (surface_object->destination_index != i)
@@ -115,13 +111,13 @@ VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 		rc = v4l2_request_buffer(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, i, &length, &offset);
 		if (rc < 0) {
 			status = VA_STATUS_ERROR_ALLOCATION_FAILED;
-			goto error;
+			goto err_surface;
 		}
 
 		source_data = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_SHARED, driver_data->video_fd, offset);
 		if (source_data == MAP_FAILED) {
 			status = VA_STATUS_ERROR_ALLOCATION_FAILED;
-			goto error;
+			goto err_surface:
 		}
 
 		surface_object->source_index = i;
@@ -153,20 +149,17 @@ VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 
 	*context_id = id;
 
-	status = VA_STATUS_SUCCESS;
-	goto complete;
+	return VA_STATUS_SUCCESS;
 
-error:
+err_surface:
 	if (source_data != MAP_FAILED)
 		munmap(source_data, length);
 
-	if (ids != NULL)
-		free(ids);
+err_free_ids:
+	free(ids);
+err_free_context_object:
+	object_heap_free(&driver_data->context_heap, (struct object_base *) context_object);
 
-	if (context_object != NULL)
-		object_heap_free(&driver_data->context_heap, (struct object_base *) context_object);
-
-complete:
 	return status;
 }
 
