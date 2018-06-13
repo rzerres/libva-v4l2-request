@@ -59,21 +59,18 @@ VAStatus SunxiCedrusCreateBuffer(VADriverContextP context,
 			break;
 
 		default:
-			status = VA_STATUS_ERROR_UNSUPPORTED_BUFFERTYPE;
-			goto error;
+			return VA_STATUS_ERROR_UNSUPPORTED_BUFFERTYPE;
 	}
 
 	id = object_heap_allocate(&driver_data->buffer_heap);
 	buffer_object = BUFFER(id);
-	if (buffer_object == NULL) {
-		status = VA_STATUS_ERROR_ALLOCATION_FAILED;
-		goto error;
-	}
+	if (buffer_object == NULL)
+		return VA_STATUS_ERROR_ALLOCATION_FAILED;
 
 	buffer_data = malloc(size * count);
 	if (buffer_data == NULL) {
 		status = VA_STATUS_ERROR_ALLOCATION_FAILED;
-		goto error;
+		goto err_free_object;
 	}
 
 	if (data != NULL)
@@ -87,14 +84,11 @@ VAStatus SunxiCedrusCreateBuffer(VADriverContextP context,
 
 	*buffer_id = id;
 
-	status = VA_STATUS_SUCCESS;
-	goto complete;
+	return VA_STATUS_SUCCESS;
 
-error:
-	if (buffer_object != NULL)
-		object_heap_free(&driver_data->buffer_heap, (struct object_base *) buffer_object);
+err_free_object:
+	object_heap_free(&driver_data->buffer_heap, (struct object_base *) buffer_object);
 
-complete:
 	return status;
 }
 
