@@ -92,11 +92,17 @@ VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 		goto err_free_context_object;
 	}
 
+	/*
+	 * The surface_ids array has been allocated by the caller and
+	 * we don't have any indication wrt its life time. Make sure
+	 * it's life span is under our control.
+	 */
 	ids = malloc(surfaces_count * sizeof(VASurfaceID));
 	if (ids == NULL) {
 		status = VA_STATUS_ERROR_ALLOCATION_FAILED;
 		goto err_free_context_object;
 	}
+	memcpy(ids, surfaces_ids, surfaces_count * sizeof(VASurfaceID));
 
 	for (i = 0; i < surfaces_count; i++) {
 		surface_object = SURFACE(surfaces_ids[i]);
@@ -123,20 +129,18 @@ VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 		surface_object->source_index = i;
 		surface_object->source_data = source_data;
 		surface_object->source_size = length;
-
-		ids[i] = surfaces_ids[i];
 	}
 
 	rc = v4l2_set_stream(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, true);
 	if (rc < 0) {
 		status = VA_STATUS_ERROR_OPERATION_FAILED;
-		goto error;
+		goto err_surface;
 	}
 
 	rc = v4l2_set_stream(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, true);
 	if (rc < 0) {
 		status = VA_STATUS_ERROR_OPERATION_FAILED;
-		goto error;
+		goto err_surface;
 	}
 
 	context_object->config_id = config_id;
