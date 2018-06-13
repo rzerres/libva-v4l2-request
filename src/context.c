@@ -41,6 +41,85 @@
 #include "v4l2.h"
 #include "utils.h"
 
+static VAStatus SunxiCedrusMapSurfaces(struct sunxi_cedrus_driver_data *driver,
+				       struct object_context *context,
+				       VASurfaceID *ids, unsigned int count)
+{
+	unsigned int i;
+	VAStatus status;
+	int rc;
+
+	context->surfaces_count = 0;
+	for (i = 0; i < count; i++) {
+		struct object_surface *surface = SURFACE(driver, ids[i]);
+		unsigned int length;
+		unsigned int offset;
+		void *data;
+
+		if (surface == NULL) {
+			status = VA_STATUS_ERROR_INVALID_SURFACE;
+			goto err_unroll;
+		}
+
+		if (surface->destination_index != i)
+			sunxi_cedrus_log("Mismatch between source index %d and destination index %d for surface %d\n", i, surface->destination_index, ids[i]);
+
+		rc = v4l2_request_buffer(driver->video_fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, i, &length, &offset);
+		if (rc < 0) {
+			status = VA_STATUS_ERROR_ALLOCATION_FAILED;
+			goto err_unroll;
+		}
+
+		data = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_SHARED, driver->video_fd, offset);
+		if (data == MAP_FAILED) {
+			status = VA_STATUS_ERROR_ALLOCATION_FAILED;
+			goto err_unroll;
+		}
+
+		surface->source_index = i;
+		surface->source_data = data;
+		surface->source_size = length;
+		context->surfaces_count++;
+	}
+
+	context->surfaces_ids = ids;
+	return VA_STATUS_SUCCESS;
+
+err_unroll:
+	for (i = 0; i < context->surfaces_count; i++) {
+		struct object_surface *surface = SURFACE(driver, ids[i]);
+
+		if (surface->source_data)
+			munmap(surface->source_data, surface->source_size);
+	}
+
+	context->surfaces_count = 0;
+	context->surfaces_ids = NULL;
+
+	return status;
+}
+
+static void SunxiCedrusUnmapSurfaces(struct sunxi_cedrus_driver_data *data,
+				     struct object_context *context)
+{
+	unsigned int i;
+
+	if (context->surfaces_ids == NULL)
+		return;
+
+	for (i = 0; i < context->surfaces_count; i++) {
+		struct object_surface *surface = SURFACE(data, context->surfaces_ids[i]);
+
+		if (surface == NULL)
+			continue;
+
+		if (surface->source_data == NULL)
+			continue;
+
+		munmap(surface->source_data, surface->source_size);
+	}
+}
+
 VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 	VAConfigID config_id, int picture_width, int picture_height, int flags,
 	VASurfaceID *surfaces_ids, int surfaces_count,
@@ -49,16 +128,11 @@ VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
 	struct object_config *config_object;
-	struct object_surface *surface_object;
 	struct object_context *context_object = NULL;
-	unsigned int length;
-	unsigned int offset;
-	void *source_data = MAP_FAILED;
 	VASurfaceID *ids = NULL;
 	VAContextID id;
 	VAStatus status;
 	unsigned int pixelformat;
-	unsigned int i;
 	int rc;
 
 	config_object = CONFIG(driver_data, config_id);
@@ -105,32 +179,10 @@ VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 	}
 	memcpy(ids, surfaces_ids, surfaces_count * sizeof(VASurfaceID));
 
-	for (i = 0; i < surfaces_count; i++) {
-		surface_object = SURFACE(driver_data, surfaces_ids[i]);
-		if (surface_object == NULL) {
-			status = VA_STATUS_ERROR_INVALID_SURFACE;
-			goto err_surface;
-		}
-
-		if (surface_object->destination_index != i)
-			sunxi_cedrus_log("Mismatch between source index %d and destination index %d for surface %d\n", i, surface_object->destination_index, surfaces_ids[i]);
-
-		rc = v4l2_request_buffer(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, i, &length, &offset);
-		if (rc < 0) {
-			status = VA_STATUS_ERROR_ALLOCATION_FAILED;
-			goto err_surface;
-		}
-
-		source_data = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_SHARED, driver_data->video_fd, offset);
-		if (source_data == MAP_FAILED) {
-			status = VA_STATUS_ERROR_ALLOCATION_FAILED;
-			goto err_surface;
-		}
-
-		surface_object->source_index = i;
-		surface_object->source_data = source_data;
-		surface_object->source_size = length;
-	}
+	status = SunxiCedrusMapSurfaces(driver_data, context_object,
+					ids, surfaces_count);
+	if (status != VA_STATUS_SUCCESS)
+		goto err_free_ids;
 
 	rc = v4l2_set_stream(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, true);
 	if (rc < 0) {
@@ -146,8 +198,6 @@ VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 
 	context_object->config_id = config_id;
 	context_object->render_surface_id = VA_INVALID_ID;
-	context_object->surfaces_ids = ids;
-	context_object->surfaces_count = surfaces_count;
 	context_object->picture_width = picture_width;
 	context_object->picture_height = picture_height;
 	context_object->flags = flags;
@@ -157,9 +207,8 @@ VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 	return VA_STATUS_SUCCESS;
 
 err_surface:
-	if (source_data != MAP_FAILED)
-		munmap(source_data, length);
-
+	SunxiCedrusUnmapSurfaces(driver_data, context_object);
+err_free_ids:
 	free(ids);
 err_free_context_object:
 	object_heap_free(&driver_data->context_heap, (struct object_base *) context_object);
