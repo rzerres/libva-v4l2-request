@@ -148,64 +148,54 @@ VAStatus SunxiCedrusSyncSurface(VADriverContextP context,
 	int rc;
 
 	surface_object = SURFACE(surface_id);
-	if (surface_object == NULL) {
-		status = VA_STATUS_ERROR_INVALID_SURFACE;
-		goto error;
-	}
+	if (surface_object == NULL)
+		return VA_STATUS_ERROR_INVALID_SURFACE;
 
-	if (surface_object->status != VASurfaceRendering) {
-		status = VA_STATUS_SUCCESS;
-		goto complete;
-	}
+	if (surface_object->status != VASurfaceRendering)
+		return VA_STATUS_SUCCESS;
 
 	request_fd = surface_object->request_fd;
-	if (request_fd < 0) {
-		status = VA_STATUS_ERROR_OPERATION_FAILED;
-		goto error;
-	}
+	if (request_fd < 0)
+		return VA_STATUS_ERROR_OPERATION_FAILED;
 
 	rc = media_request_queue(request_fd);
 	if (rc < 0) {
 		status = VA_STATUS_ERROR_OPERATION_FAILED;
-		goto error;
+		goto err_close_request_fd;
 	}
 
 	rc = media_request_wait_completion(request_fd);
 	if (rc < 0) {
 		status = VA_STATUS_ERROR_OPERATION_FAILED;
-		goto error;
+		goto err_close_request_fd;
 	}
 
 	rc = media_request_reinit(request_fd);
 	if (rc < 0) {
 		status = VA_STATUS_ERROR_OPERATION_FAILED;
-		goto error;
+		goto err_close_request_fd;
 	}
 
 	rc = v4l2_dequeue_buffer(driver_data->video_fd, request_fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, surface_object->source_index);
 	if (rc < 0) {
 		status = VA_STATUS_ERROR_OPERATION_FAILED;
-		goto error;
+		goto err_close_request_fd;
 	}
 
 	rc = v4l2_dequeue_buffer(driver_data->video_fd, request_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, surface_object->destination_index);
 	if (rc < 0) {
 		status = VA_STATUS_ERROR_OPERATION_FAILED;
-		goto error;
+		goto err_close_request_fd;
 	}
 
 	surface_object->status = VASurfaceDisplaying;
 
-	status = VA_STATUS_SUCCESS;
-	goto complete;
+	return VA_STATUS_SUCCESS;
 
-error:
-	if (request_fd >= 0) {
-		close(request_fd);
-		surface_object->request_fd = -1;
-	}
+err_close_request_fd:
+	surface_object->request_fd = -1;
+	close(request_fd);
 
-complete:
 	return status;
 }
 
