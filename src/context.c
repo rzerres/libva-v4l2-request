@@ -160,7 +160,6 @@ err_surface:
 	if (source_data != MAP_FAILED)
 		munmap(source_data, length);
 
-err_free_ids:
 	free(ids);
 err_free_context_object:
 	object_heap_free(&driver_data->context_heap, (struct object_base *) context_object);
