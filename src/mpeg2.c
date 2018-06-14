@@ -23,9 +23,6 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "sunxi_cedrus.h"
-#include "mpeg2.h"
-
 #include <assert.h>
 #include <string.h>
 
@@ -34,65 +31,60 @@
 
 #include <linux/videodev2.h>
 
-int mpeg2_fill_picture_parameters(struct sunxi_cedrus_driver_data *driver_data,
-	struct object_context *context_object,
-	struct object_surface *surface_object,
-	VAPictureParameterBufferMPEG2 *parameters)
+#include "surface.h"
+#include "sunxi_cedrus.h"
+#include "v4l2.h"
+
+int mpeg2_fill_controls(struct sunxi_cedrus_driver_data *driver,
+			struct object_surface *surface)
 {
-	struct v4l2_ctrl_mpeg2_frame_hdr *header = &surface_object->mpeg2_header;
+	VAPictureParameterBufferMPEG2 *parameters = &surface->params.mpeg2.picture;
+	struct v4l2_ctrl_mpeg2_frame_hdr header;
 	struct object_surface *forward_reference_surface;
 	struct object_surface *backward_reference_surface;
+	int rc;
 
-	header->type = MPEG2;
+	memset(&header, 0, sizeof(header));
 
-	header->width = context_object->picture_width;
-	header->height = context_object->picture_height;
+	header.type = MPEG2;
 
-	header->picture_coding_type = parameters->picture_coding_type;
-	header->f_code[0][0] = (parameters->f_code >> 12) & 0x0f;
-	header->f_code[0][1] = (parameters->f_code >> 8) & 0x0f;
-	header->f_code[1][0] = (parameters->f_code >> 4) & 0x0f;
-	header->f_code[1][1] = (parameters->f_code >> 0) & 0x0f;
+	header.width = surface->width;
+	header.height = surface->height;
+	header.slice_pos = 0;
+	header.slice_len = surface->slices_size * 8;
 
-	header->intra_dc_precision = parameters->picture_coding_extension.bits.intra_dc_precision;
-	header->picture_structure = parameters->picture_coding_extension.bits.picture_structure;
-	header->top_field_first = parameters->picture_coding_extension.bits.top_field_first;
-	header->frame_pred_frame_dct = parameters->picture_coding_extension.bits.frame_pred_frame_dct;
-	header->concealment_motion_vectors = parameters->picture_coding_extension.bits.concealment_motion_vectors;
-	header->q_scale_type = parameters->picture_coding_extension.bits.q_scale_type;
-	header->intra_vlc_format = parameters->picture_coding_extension.bits.intra_vlc_format;
-	header->alternate_scan = parameters->picture_coding_extension.bits.alternate_scan;
+	header.picture_coding_type = parameters->picture_coding_type;
+	header.f_code[0][0] = (parameters->f_code >> 12) & 0x0f;
+	header.f_code[0][1] = (parameters->f_code >> 8) & 0x0f;
+	header.f_code[1][0] = (parameters->f_code >> 4) & 0x0f;
+	header.f_code[1][1] = (parameters->f_code >> 0) & 0x0f;
 
-	forward_reference_surface = SURFACE(driver_data, parameters->forward_reference_picture);
+	header.intra_dc_precision = parameters->picture_coding_extension.bits.intra_dc_precision;
+	header.picture_structure = parameters->picture_coding_extension.bits.picture_structure;
+	header.top_field_first = parameters->picture_coding_extension.bits.top_field_first;
+	header.frame_pred_frame_dct = parameters->picture_coding_extension.bits.frame_pred_frame_dct;
+	header.concealment_motion_vectors = parameters->picture_coding_extension.bits.concealment_motion_vectors;
+	header.q_scale_type = parameters->picture_coding_extension.bits.q_scale_type;
+	header.intra_vlc_format = parameters->picture_coding_extension.bits.intra_vlc_format;
+	header.alternate_scan = parameters->picture_coding_extension.bits.alternate_scan;
+
+	forward_reference_surface = SURFACE(driver, parameters->forward_reference_picture);
 	if (forward_reference_surface != NULL)
-		header->forward_ref_index = forward_reference_surface->destination_index;
+		header.forward_ref_index = forward_reference_surface->destination_index;
 	else
-		header->forward_ref_index = surface_object->destination_index;
+		header.forward_ref_index = surface->destination_index;
 
-	backward_reference_surface = SURFACE(driver_data, parameters->backward_reference_picture);
+	backward_reference_surface = SURFACE(driver, parameters->backward_reference_picture);
 	if (backward_reference_surface != NULL)
-		header->backward_ref_index = backward_reference_surface->destination_index;
+		header.backward_ref_index = backward_reference_surface->destination_index;
 	else
-		header->backward_ref_index = surface_object->destination_index;
+		header.backward_ref_index = surface->destination_index;
 
-	return 0;
-}
+	rc = v4l2_set_control(driver->video_fd, surface->request_fd,
+			      V4L2_CID_MPEG_VIDEO_MPEG2_FRAME_HDR,
+			      &header, sizeof(header));
+	if (rc < 0)
+		return VA_STATUS_ERROR_OPERATION_FAILED;
 
-int mpeg2_fill_slice_data(struct sunxi_cedrus_driver_data *driver_data,
-	struct object_context *context_object,
-	struct object_surface *surface_object, void *data, unsigned int size)
-{
-	unsigned char *p = (unsigned char *) surface_object->source_data +
-		surface_object->slices_size;
-
-	/*
-	 * Since there is no guarantee that the allocation order is the same as
-	 * the submission order (via RenderPicture), we can't use a V4L2 buffer
-	 * directly and have to copy from a regular buffer.
-	 * */
-	memcpy(p, data, size);
-
-	surface_object->slices_size += size;
-
-	return 0;
+	return VA_STATUS_SUCCESS;
 }

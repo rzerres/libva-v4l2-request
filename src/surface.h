@@ -48,10 +48,15 @@ struct object_surface {
 	void *destination_data[2];
 	unsigned int destination_size[2];
 
-	struct v4l2_ctrl_mpeg2_frame_hdr mpeg2_header;
 	unsigned int slices_size;
 
 	int request_fd;
+
+	union {
+		struct {
+			VAPictureParameterBufferMPEG2 picture;
+		} mpeg2;
+	} params;
 };
 
 VAStatus SunxiCedrusCreateSurfaces(VADriverContextP context, int width,

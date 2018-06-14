@@ -26,19 +26,10 @@
 #ifndef _MPEG2_H_
 #define _MPEG2_H_
 
-#include <va/va_backend.h>
+struct object_surface;
+struct sunxi_cedrus_driver_data;
 
-#include "context.h"
-#include "buffer.h"
-
-#include "surface.h"
-
-int mpeg2_fill_picture_parameters(struct sunxi_cedrus_driver_data *driver_data,
-	struct object_context *context_object,
-	struct object_surface *surface_object,
-	VAPictureParameterBufferMPEG2 *parameters);
-int mpeg2_fill_slice_data(struct sunxi_cedrus_driver_data *driver_data,
-	struct object_context *context_object,
-	struct object_surface *surface_object, void *data, unsigned int size);
+int mpeg2_fill_controls(struct sunxi_cedrus_driver_data *driver,
+			struct object_surface *surface);
 
 #endif
