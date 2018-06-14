@@ -77,6 +77,7 @@ VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 			break;
 
 		default:
+			status = VA_STATUS_ERROR_UNSUPPORTED_PROFILE;
 			goto err_free_context_object;
 	}
 
