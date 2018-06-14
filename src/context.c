@@ -61,12 +61,12 @@ VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 	unsigned int i;
 	int rc;
 
-	config_object = CONFIG(config_id);
+	config_object = CONFIG(driver_data, config_id);
 	if (config_object == NULL)
 		return VA_STATUS_ERROR_INVALID_CONFIG;
 
 	id = object_heap_allocate(&driver_data->context_heap);
-	context_object = CONTEXT(id);
+	context_object = CONTEXT(driver_data, id);
 	if (context_object == NULL)
 		return VA_STATUS_ERROR_ALLOCATION_FAILED;
 
@@ -106,7 +106,7 @@ VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 	memcpy(ids, surfaces_ids, surfaces_count * sizeof(VASurfaceID));
 
 	for (i = 0; i < surfaces_count; i++) {
-		surface_object = SURFACE(surfaces_ids[i]);
+		surface_object = SURFACE(driver_data, surfaces_ids[i]);
 		if (surface_object == NULL) {
 			status = VA_STATUS_ERROR_INVALID_SURFACE;
 			goto err_surface;
@@ -176,7 +176,7 @@ VAStatus SunxiCedrusDestroyContext(VADriverContextP context,
 	struct object_context *context_object;
 	int rc;
 
-	context_object = CONTEXT(context_id);
+	context_object = CONTEXT(driver_data, context_id);
 	if (context_object == NULL)
 		return VA_STATUS_ERROR_INVALID_CONTEXT;
 

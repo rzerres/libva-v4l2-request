@@ -69,7 +69,7 @@ VAStatus SunxiCedrusCreateSurfaces(VADriverContextP context, int width,
 
 	for (i = 0; i < surfaces_count; i++) {
 		id = object_heap_allocate(&driver_data->surface_heap);
-		surface_object = SURFACE(id);
+		surface_object = SURFACE(driver_data, id);
 		if (surface_object == NULL)
 			return VA_STATUS_ERROR_ALLOCATION_FAILED;
 
@@ -117,7 +117,7 @@ VAStatus SunxiCedrusDestroySurfaces(VADriverContextP context,
 	unsigned int i, j;
 
 	for (i = 0; i < surfaces_count; i++) {
-		surface_object = SURFACE(surfaces_ids[i]);
+		surface_object = SURFACE(driver_data, surfaces_ids[i]);
 		if (surface_object == NULL)
 			return VA_STATUS_ERROR_INVALID_SURFACE;
 
@@ -147,7 +147,7 @@ VAStatus SunxiCedrusSyncSurface(VADriverContextP context,
 	int request_fd = -1;
 	int rc;
 
-	surface_object = SURFACE(surface_id);
+	surface_object = SURFACE(driver_data, surface_id);
 	if (surface_object == NULL)
 		return VA_STATUS_ERROR_INVALID_SURFACE;
 
@@ -206,7 +206,7 @@ VAStatus SunxiCedrusQuerySurfaceStatus(VADriverContextP context,
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
 	struct object_surface *surface_object;
 
-	surface_object = SURFACE(surface_id);
+	surface_object = SURFACE(driver_data, surface_id);
 	if (surface_object == NULL)
 		return VA_STATUS_ERROR_INVALID_SURFACE;
 
@@ -236,7 +236,7 @@ VAStatus SunxiCedrusPutSurface(VADriverContextP context, VASurfaceID surface_id,
 
 	/* WARNING: This is for development purpose only!!! */
 
-	surface_object = SURFACE(surface_id);
+	surface_object = SURFACE(driver_data, surface_id);
 
 	display = XOpenDisplay(getenv("DISPLAY"));
 	if (display == NULL) {
