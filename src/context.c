@@ -124,7 +124,7 @@ VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 		source_data = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_SHARED, driver_data->video_fd, offset);
 		if (source_data == MAP_FAILED) {
 			status = VA_STATUS_ERROR_ALLOCATION_FAILED;
-			goto err_surface:
+			goto err_surface;
 		}
 
 		surface_object->source_index = i;
