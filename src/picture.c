@@ -30,6 +30,7 @@
 #include "surface.h"
 #include "config.h"
 
+#include "h264.h"
 #include "mpeg2.h"
 
 #include <assert.h>
@@ -51,6 +52,13 @@ SunxiCedrusSetControls(struct sunxi_cedrus_driver_data *driver_data,
 		       struct object_surface *surface)
 {
 	switch (config->profile) {
+	case VAProfileH264Main:
+	case VAProfileH264High:
+	case VAProfileH264ConstrainedBaseline:
+	case VAProfileH264MultiviewHigh:
+	case VAProfileH264StereoHigh:
+		return h264_fill_controls(driver_data, surface);
+
 	case VAProfileMPEG2Simple:
 	case VAProfileMPEG2Main:
 		return mpeg2_fill_controls(driver_data, surface);
@@ -104,10 +112,51 @@ static VAStatus SunxiCedrusQueueBuffer(struct object_config *config,
 
 	case VAPictureParameterBufferType:
 		switch (config->profile) {
+		case VAProfileH264Main:
+		case VAProfileH264High:
+		case VAProfileH264ConstrainedBaseline:
+		case VAProfileH264MultiviewHigh:
+		case VAProfileH264StereoHigh:
+			memcpy(&surface->params.h264.picture, buffer->data,
+			       sizeof(surface->params.h264.picture));
+			break;
+
 		case VAProfileMPEG2Simple:
 		case VAProfileMPEG2Main:
 			memcpy(&surface->params.mpeg2.picture, buffer->data,
 			       sizeof(surface->params.mpeg2.picture));
+			break;
+
+		default:
+			return VA_STATUS_ERROR_OPERATION_FAILED;
+		}
+		break;
+
+	case VASliceParameterBufferType:
+		switch (config->profile) {
+		case VAProfileH264Main:
+		case VAProfileH264High:
+		case VAProfileH264ConstrainedBaseline:
+		case VAProfileH264MultiviewHigh:
+		case VAProfileH264StereoHigh:
+			memcpy(&surface->params.h264.slice, buffer->data,
+			       sizeof(surface->params.h264.slice));
+			break;
+
+		default:
+			return VA_STATUS_ERROR_OPERATION_FAILED;
+		}
+		break;
+
+	case VAIQMatrixBufferType:
+		switch (config->profile) {
+		case VAProfileH264Main:
+		case VAProfileH264High:
+		case VAProfileH264ConstrainedBaseline:
+		case VAProfileH264MultiviewHigh:
+		case VAProfileH264StereoHigh:
+			memcpy(&surface->params.h264.matrix, buffer->data,
+			       sizeof(surface->params.h264.matrix));
 			break;
 
 		default:

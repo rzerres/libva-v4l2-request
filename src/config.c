@@ -47,6 +47,15 @@ VAStatus SunxiCedrusCreateConfig(VADriverContextP context, VAProfile profile,
 	int i, index;
 
 	switch (profile) {
+		case VAProfileH264Main:
+		case VAProfileH264High:
+		case VAProfileH264ConstrainedBaseline:
+		case VAProfileH264MultiviewHigh:
+		case VAProfileH264StereoHigh:
+			if (entrypoint != VAEntrypointVLD)
+				return VA_STATUS_ERROR_UNSUPPORTED_ENTRYPOINT;
+			break;
+
 		case VAProfileMPEG2Simple:
 		case VAProfileMPEG2Main:
 			if (entrypoint != VAEntrypointVLD)
@@ -106,10 +115,23 @@ VAStatus SunxiCedrusQueryConfigProfiles(VADriverContextP context,
 	unsigned int index = 0;
 	bool found;
 
-	found = v4l2_find_format(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, V4L2_PIX_FMT_MPEG2_FRAME);
+	found = v4l2_find_format(driver_data->video_fd,
+				 V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE,
+				 V4L2_PIX_FMT_MPEG2_FRAME);
 	if (found && index < (SUNXI_CEDRUS_MAX_CONFIG_ATTRIBUTES - 2)) {
 		profiles[index++] = VAProfileMPEG2Simple;
 		profiles[index++] = VAProfileMPEG2Main;
+	}
+
+	found = v4l2_find_format(driver_data->video_fd,
+				 V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE,
+				 V4L2_PIX_FMT_H264_SLICE);
+	if (found && index < (SUNXI_CEDRUS_MAX_CONFIG_ATTRIBUTES - 5)) {
+		profiles[index++] = VAProfileH264Main;
+		profiles[index++] = VAProfileH264High;
+		profiles[index++] = VAProfileH264ConstrainedBaseline;
+		profiles[index++] = VAProfileH264MultiviewHigh;
+		profiles[index++] = VAProfileH264StereoHigh;
 	}
 
 	*profiles_count = index;
@@ -121,6 +143,11 @@ VAStatus SunxiCedrusQueryConfigEntrypoints(VADriverContextP context,
 	VAProfile profile, VAEntrypoint *entrypoints, int *entrypoints_count)
 {
 	switch (profile) {
+		case VAProfileH264Main:
+		case VAProfileH264High:
+		case VAProfileH264ConstrainedBaseline:
+		case VAProfileH264MultiviewHigh:
+		case VAProfileH264StereoHigh:
 		case VAProfileMPEG2Simple:
 		case VAProfileMPEG2Main:
 			entrypoints[0] = VAEntrypointVLD;

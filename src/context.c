@@ -145,6 +145,14 @@ VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 		return VA_STATUS_ERROR_ALLOCATION_FAILED;
 
 	switch (config_object->profile) {
+		case VAProfileH264Main:
+		case VAProfileH264High:
+		case VAProfileH264ConstrainedBaseline:
+		case VAProfileH264MultiviewHigh:
+		case VAProfileH264StereoHigh:
+			pixelformat = V4L2_PIX_FMT_H264_SLICE;
+			break;
+
 		case VAProfileMPEG2Simple:
 		case VAProfileMPEG2Main:
 			pixelformat = V4L2_PIX_FMT_MPEG2_FRAME;
