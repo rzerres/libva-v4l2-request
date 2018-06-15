@@ -40,7 +40,7 @@ int media_request_alloc(int media_fd)
 
 	rc = ioctl(media_fd, MEDIA_IOC_REQUEST_ALLOC, &request_alloc);
 	if (rc < 0) {
-		log("Unable to allocate media request: %s\n", strerror(errno));
+		cprint("Unable to allocate media request: %s\n", strerror(errno));
 		return -1;
 	}
 
@@ -53,7 +53,7 @@ int media_request_reinit(int request_fd)
 
 	rc = ioctl(request_fd, MEDIA_REQUEST_IOC_REINIT, NULL);
 	if (rc < 0) {
-		log("Unable to reinit media request: %s\n", strerror(errno));
+		cprint("Unable to reinit media request: %s\n", strerror(errno));
 		return -1;
 	}
 
@@ -66,7 +66,7 @@ int media_request_queue(int request_fd)
 
 	rc = ioctl(request_fd, MEDIA_REQUEST_IOC_QUEUE, NULL);
 	if (rc < 0) {
-		log("Unable to queue media request: %s\n", strerror(errno));
+		cprint("Unable to queue media request: %s\n", strerror(errno));
 		return -1;
 	}
 
@@ -84,10 +84,10 @@ int media_request_wait_completion(int request_fd)
 
 	rc = select(request_fd + 1, NULL, NULL, &except_fds, &tv);
 	if (rc == 0) {
-		log("Timeout when waiting for media request\n");
+		cprint("Timeout when waiting for media request\n");
 		return -1;
 	} else if (rc < 0) {
-		log("Unable to select media request: %s\n", strerror(errno));
+		cprint("Unable to select media request: %s\n", strerror(errno));
 		return -1;
 	}
 

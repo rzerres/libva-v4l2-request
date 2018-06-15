@@ -62,7 +62,7 @@ static VAStatus SunxiCedrusMapSurfaces(struct sunxi_cedrus_driver_data *driver,
 		}
 
 		if (surface->destination_index != i)
-			log("Mismatch between source index %d and destination index %d for surface %d\n", i, surface->destination_index, ids[i]);
+			cprint("Mismatch between source index %d and destination index %d for surface %d\n", i, surface->destination_index, ids[i]);
 
 		rc = v4l2_request_buffer(driver->video_fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, i, &length, &offset);
 		if (rc < 0) {

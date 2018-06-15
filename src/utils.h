@@ -26,6 +26,6 @@
 #ifndef _UTILS_H_
 #define _UTILS_H_
 
-void log(const char *format, ...);
+void cprint(const char *format, ...);
 
 #endif

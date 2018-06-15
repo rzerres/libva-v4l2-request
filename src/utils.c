@@ -30,7 +30,7 @@
 #include "sunxi_cedrus.h"
 #include "utils.h"
 
-void log(const char *format, ...)
+void cprint(const char *format, ...)
 {
 	va_list arguments;
 
