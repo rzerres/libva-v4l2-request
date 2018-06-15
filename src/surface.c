@@ -159,6 +159,7 @@ VAStatus SunxiCedrusSyncSurface(VADriverContextP context,
 	if (request_fd < 0)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 
+	cprint("request fd %d\n", request_fd);
 	rc = media_request_queue(request_fd);
 	if (rc < 0) {
 		status = VA_STATUS_ERROR_OPERATION_FAILED;
