@@ -56,7 +56,7 @@ static int object_heap_expand(object_heap_p heap)
 		heap->bucket = new_bucket;
 	}
 
-	new_heap_index = (void *) malloc(heap->heap_increment * heap->object_size);
+	new_heap_index = malloc(heap->heap_increment * heap->object_size);
 	if (NULL == new_heap_index) {
 		return -1; /* Out of memory */
 	}
