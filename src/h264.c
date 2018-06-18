@@ -37,8 +37,8 @@
 #include "v4l2.h"
 
 enum slice_type {
-	H264_SLICE_P	= 0,
-	H264_SLICE_B	= 1,
+	H264_SLICE_P    = 0,
+	H264_SLICE_B    = 1,
 };
 
 static int h264_lookup_ref_pic(VAPictureParameterBufferH264 *VAPicture,
@@ -81,10 +81,12 @@ static void h264_va_picture_to_v4l2(VAPictureParameterBufferH264 *VAPicture,
 			dpb->flags |= V4L2_H264_DPB_ENTRY_FLAG_ACTIVE;
 	}
 
-	pps->weighted_bipred_idc = VAPicture->pic_fields.bits.weighted_bipred_idc;
+	pps->weighted_bipred_idc =
+		VAPicture->pic_fields.bits.weighted_bipred_idc;
 	pps->pic_init_qs_minus26 = VAPicture->pic_init_qs_minus26;
 	pps->chroma_qp_index_offset = VAPicture->chroma_qp_index_offset;
-	pps->second_chroma_qp_index_offset = VAPicture->second_chroma_qp_index_offset;
+	pps->second_chroma_qp_index_offset =
+		VAPicture->second_chroma_qp_index_offset;
 
 	if (VAPicture->pic_fields.bits.entropy_coding_mode_flag)
 		pps->flags |= V4L2_H264_PPS_FLAG_ENTROPY_CODING_MODE;
@@ -99,10 +101,12 @@ static void h264_va_picture_to_v4l2(VAPictureParameterBufferH264 *VAPicture,
 		pps->flags |= V4L2_H264_PPS_FLAG_CONSTRAINED_INTRA_PRED;
 
 	if (VAPicture->pic_fields.bits.pic_order_present_flag)
-		pps->flags |= V4L2_H264_PPS_FLAG_BOTTOM_FIELD_PIC_ORDER_IN_FRAME_PRESENT;
+		pps->flags |=
+			V4L2_H264_PPS_FLAG_BOTTOM_FIELD_PIC_ORDER_IN_FRAME_PRESENT;
 
 	if (VAPicture->pic_fields.bits.deblocking_filter_control_present_flag)
-		pps->flags |= V4L2_H264_PPS_FLAG_DEBLOCKING_FILTER_CONTROL_PRESENT;
+		pps->flags |=
+			V4L2_H264_PPS_FLAG_DEBLOCKING_FILTER_CONTROL_PRESENT;
 
 	if (VAPicture->pic_fields.bits.redundant_pic_cnt_present_flag)
 		pps->flags |= V4L2_H264_PPS_FLAG_REDUNDANT_PIC_CNT_PRESENT;
@@ -110,16 +114,20 @@ static void h264_va_picture_to_v4l2(VAPictureParameterBufferH264 *VAPicture,
 	sps->chroma_format_idc = VAPicture->seq_fields.bits.chroma_format_idc;
 	sps->bit_depth_luma_minus8 = VAPicture->bit_depth_luma_minus8;
 	sps->bit_depth_chroma_minus8 = VAPicture->bit_depth_chroma_minus8;
-	sps->log2_max_frame_num_minus4 = VAPicture->seq_fields.bits.log2_max_frame_num_minus4;
-	sps->log2_max_pic_order_cnt_lsb_minus4 = VAPicture->seq_fields.bits.log2_max_pic_order_cnt_lsb_minus4;
+	sps->log2_max_frame_num_minus4 =
+		VAPicture->seq_fields.bits.log2_max_frame_num_minus4;
+	sps->log2_max_pic_order_cnt_lsb_minus4 =
+		VAPicture->seq_fields.bits.log2_max_pic_order_cnt_lsb_minus4;
 	sps->pic_order_cnt_type = VAPicture->seq_fields.bits.pic_order_cnt_type;
 	sps->pic_width_in_mbs_minus1 = VAPicture->picture_width_in_mbs_minus1;
-	sps->pic_height_in_map_units_minus1 = VAPicture->picture_height_in_mbs_minus1;
+	sps->pic_height_in_map_units_minus1 =
+		VAPicture->picture_height_in_mbs_minus1;
 
 	if (VAPicture->seq_fields.bits.residual_colour_transform_flag)
 		sps->flags |= V4L2_H264_SPS_FLAG_SEPARATE_COLOUR_PLANE;
 	if (VAPicture->seq_fields.bits.gaps_in_frame_num_value_allowed_flag)
-		sps->flags |= V4L2_H264_SPS_FLAG_GAPS_IN_FRAME_NUM_VALUE_ALLOWED;
+		sps->flags |=
+			V4L2_H264_SPS_FLAG_GAPS_IN_FRAME_NUM_VALUE_ALLOWED;
 	if (VAPicture->seq_fields.bits.frame_mbs_only_flag)
 		sps->flags |= V4L2_H264_SPS_FLAG_FRAME_MBS_ONLY;
 	if (VAPicture->seq_fields.bits.mb_adaptive_frame_field_flag)
@@ -160,30 +168,39 @@ static void h264_va_slice_to_v4l2(VASliceParameterBufferH264 *VASlice,
 	slice->slice_type = VASlice->slice_type;
 	slice->cabac_init_idc = VASlice->cabac_init_idc;
 	slice->slice_qp_delta = VASlice->slice_qp_delta;
-	slice->disable_deblocking_filter_idc = VASlice->disable_deblocking_filter_idc;
+	slice->disable_deblocking_filter_idc =
+		VASlice->disable_deblocking_filter_idc;
 	slice->slice_alpha_c0_offset_div2 = VASlice->slice_alpha_c0_offset_div2;
 	slice->slice_beta_offset_div2 = VASlice->slice_beta_offset_div2;
 
 	if (((VASlice->slice_type % 5) == H264_SLICE_P) ||
 	    ((VASlice->slice_type % 5) == H264_SLICE_B)) {
-		slice->num_ref_idx_l0_active_minus1 = VASlice->num_ref_idx_l0_active_minus1;
+		slice->num_ref_idx_l0_active_minus1 =
+			VASlice->num_ref_idx_l0_active_minus1;
 
 		for (i = 0; i < VASlice->num_ref_idx_l0_active_minus1 + 1; i++)
-			slice->ref_pic_list0[i] = h264_lookup_ref_pic(VAPicture, VASlice->RefPicList0[i].frame_idx);
+			slice->ref_pic_list0[i] =
+				h264_lookup_ref_pic(VAPicture,
+						    VASlice->RefPicList0[i].frame_idx);
 	}
 
 	if ((VASlice->slice_type % 5) == H264_SLICE_B) {
-		slice->num_ref_idx_l1_active_minus1 = VASlice->num_ref_idx_l1_active_minus1;
+		slice->num_ref_idx_l1_active_minus1 =
+			VASlice->num_ref_idx_l1_active_minus1;
 
 		for (i = 0; i < VASlice->num_ref_idx_l1_active_minus1 + 1; i++)
-			slice->ref_pic_list1[i] = h264_lookup_ref_pic(VAPicture, VASlice->RefPicList1[i].frame_idx);
+			slice->ref_pic_list1[i] =
+				h264_lookup_ref_pic(VAPicture,
+						    VASlice->RefPicList1[i].frame_idx);
 	}
 
 	if (VASlice->direct_spatial_mv_pred_flag)
 		slice->flags |= V4L2_SLICE_FLAG_DIRECT_SPATIAL_MV_PRED;
 
-	slice->pred_weight_table.chroma_log2_weight_denom = VASlice->chroma_log2_weight_denom;
-	slice->pred_weight_table.luma_log2_weight_denom = VASlice->luma_log2_weight_denom;
+	slice->pred_weight_table.chroma_log2_weight_denom =
+		VASlice->chroma_log2_weight_denom;
+	slice->pred_weight_table.luma_log2_weight_denom =
+		VASlice->luma_log2_weight_denom;
 
 	factors = &slice->pred_weight_table.weight_factors[0];
 	memcpy(&factors->chroma_weight, &VASlice->chroma_weight_l0,

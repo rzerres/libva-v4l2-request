@@ -40,7 +40,8 @@ int media_request_alloc(int media_fd)
 
 	rc = ioctl(media_fd, MEDIA_IOC_REQUEST_ALLOC, &request_alloc);
 	if (rc < 0) {
-		cprint("Unable to allocate media request: %s\n", strerror(errno));
+		cprint("Unable to allocate media request: %s\n",
+		       strerror(errno));
 		return -1;
 	}
 
@@ -76,7 +77,7 @@ int media_request_queue(int request_fd)
 int media_request_wait_completion(int request_fd)
 {
 	struct timeval tv = { 0, 300000 };
-        fd_set except_fds;
+	fd_set except_fds;
 	int rc;
 
 	FD_ZERO(&except_fds);

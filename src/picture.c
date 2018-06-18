@@ -69,7 +69,7 @@ SunxiCedrusSetControls(struct sunxi_cedrus_driver_data *driver_data,
 }
 
 VAStatus SunxiCedrusBeginPicture(VADriverContextP context,
-	VAContextID context_id, VASurfaceID surface_id)
+				 VAContextID context_id, VASurfaceID surface_id)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -172,7 +172,8 @@ static VAStatus SunxiCedrusQueueBuffer(struct object_config *config,
 }
 
 VAStatus SunxiCedrusRenderPicture(VADriverContextP context,
-	VAContextID context_id, VABufferID *buffers_ids, int buffers_count)
+				  VAContextID context_id,
+				  VABufferID *buffers_ids, int buffers_count)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -191,7 +192,8 @@ VAStatus SunxiCedrusRenderPicture(VADriverContextP context,
 	if (config_object == NULL)
 		return VA_STATUS_ERROR_INVALID_CONFIG;
 
-	surface_object = SURFACE(driver_data, context_object->render_surface_id);
+	surface_object = SURFACE(driver_data,
+				 context_object->render_surface_id);
 	if (surface_object == NULL)
 		return VA_STATUS_ERROR_INVALID_SURFACE;
 
@@ -210,7 +212,7 @@ VAStatus SunxiCedrusRenderPicture(VADriverContextP context,
 }
 
 VAStatus SunxiCedrusEndPicture(VADriverContextP context,
-	VAContextID context_id)
+			       VAContextID context_id)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -229,7 +231,8 @@ VAStatus SunxiCedrusEndPicture(VADriverContextP context,
 	if (config_object == NULL)
 		return VA_STATUS_ERROR_INVALID_CONFIG;
 
-	surface_object = SURFACE(driver_data, context_object->render_surface_id);
+	surface_object = SURFACE(driver_data,
+				 context_object->render_surface_id);
 	if (surface_object == NULL)
 		return VA_STATUS_ERROR_INVALID_SURFACE;
 
@@ -247,17 +250,23 @@ VAStatus SunxiCedrusEndPicture(VADriverContextP context,
 	if (status != VA_STATUS_SUCCESS)
 		return status;
 
-	rc = v4l2_queue_buffer(driver_data->video_fd, request_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, surface_object->destination_index, 0);
+	rc = v4l2_queue_buffer(driver_data->video_fd, request_fd,
+			       V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
+			       surface_object->destination_index, 0);
 	if (rc < 0)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 
-	rc = v4l2_queue_buffer(driver_data->video_fd, request_fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, surface_object->source_index, surface_object->slices_size);
+	rc = v4l2_queue_buffer(driver_data->video_fd, request_fd,
+			       V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE,
+			       surface_object->source_index,
+			       surface_object->slices_size);
 	if (rc < 0)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 
 	surface_object->slices_size = 0;
 
-	status = SunxiCedrusSyncSurface(context, context_object->render_surface_id);
+	status = SunxiCedrusSyncSurface(context,
+					context_object->render_surface_id);
 	if (status != VA_STATUS_SUCCESS)
 		return status;
 

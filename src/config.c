@@ -37,8 +37,9 @@
 #include "utils.h"
 
 VAStatus SunxiCedrusCreateConfig(VADriverContextP context, VAProfile profile,
-	VAEntrypoint entrypoint, VAConfigAttrib *attributes,
-	int attributes_count, VAConfigID *config_id)
+				 VAEntrypoint entrypoint,
+				 VAConfigAttrib *attributes,
+				 int attributes_count, VAConfigID *config_id)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -47,23 +48,23 @@ VAStatus SunxiCedrusCreateConfig(VADriverContextP context, VAProfile profile,
 	int i, index;
 
 	switch (profile) {
-		case VAProfileH264Main:
-		case VAProfileH264High:
-		case VAProfileH264ConstrainedBaseline:
-		case VAProfileH264MultiviewHigh:
-		case VAProfileH264StereoHigh:
-			if (entrypoint != VAEntrypointVLD)
-				return VA_STATUS_ERROR_UNSUPPORTED_ENTRYPOINT;
-			break;
+	case VAProfileH264Main:
+	case VAProfileH264High:
+	case VAProfileH264ConstrainedBaseline:
+	case VAProfileH264MultiviewHigh:
+	case VAProfileH264StereoHigh:
+		if (entrypoint != VAEntrypointVLD)
+			return VA_STATUS_ERROR_UNSUPPORTED_ENTRYPOINT;
+		break;
 
-		case VAProfileMPEG2Simple:
-		case VAProfileMPEG2Main:
-			if (entrypoint != VAEntrypointVLD)
-				return VA_STATUS_ERROR_UNSUPPORTED_ENTRYPOINT;
-			break;
+	case VAProfileMPEG2Simple:
+	case VAProfileMPEG2Main:
+		if (entrypoint != VAEntrypointVLD)
+			return VA_STATUS_ERROR_UNSUPPORTED_ENTRYPOINT;
+		break;
 
-		default:
-			return VA_STATUS_ERROR_UNSUPPORTED_PROFILE;
+	default:
+		return VA_STATUS_ERROR_UNSUPPORTED_PROFILE;
 	}
 
 	if (attributes_count > SUNXI_CEDRUS_MAX_CONFIG_ATTRIBUTES)
@@ -83,7 +84,8 @@ VAStatus SunxiCedrusCreateConfig(VADriverContextP context, VAProfile profile,
 	for (i = 1; i < attributes_count; i++) {
 		index = config_object->attributes_count++;
 		config_object->attributes[index].type = attributes[index].type;
-		config_object->attributes[index].value = attributes[index].value;
+		config_object->attributes[index].value =
+			attributes[index].value;
 	}
 
 	*config_id = id;
@@ -92,7 +94,7 @@ VAStatus SunxiCedrusCreateConfig(VADriverContextP context, VAProfile profile,
 }
 
 VAStatus SunxiCedrusDestroyConfig(VADriverContextP context,
-	VAConfigID config_id)
+				  VAConfigID config_id)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -102,13 +104,15 @@ VAStatus SunxiCedrusDestroyConfig(VADriverContextP context,
 	if (config_object == NULL)
 		return VA_STATUS_ERROR_INVALID_CONFIG;
 
-	object_heap_free(&driver_data->config_heap, (struct object_base *) config_object);
+	object_heap_free(&driver_data->config_heap,
+			 (struct object_base *) config_object);
 
 	return VA_STATUS_SUCCESS;
 }
 
 VAStatus SunxiCedrusQueryConfigProfiles(VADriverContextP context,
-	VAProfile *profiles, int *profiles_count)
+					VAProfile *profiles,
+					int *profiles_count)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -140,31 +144,36 @@ VAStatus SunxiCedrusQueryConfigProfiles(VADriverContextP context,
 }
 
 VAStatus SunxiCedrusQueryConfigEntrypoints(VADriverContextP context,
-	VAProfile profile, VAEntrypoint *entrypoints, int *entrypoints_count)
+					   VAProfile profile,
+					   VAEntrypoint *entrypoints,
+					   int *entrypoints_count)
 {
 	switch (profile) {
-		case VAProfileH264Main:
-		case VAProfileH264High:
-		case VAProfileH264ConstrainedBaseline:
-		case VAProfileH264MultiviewHigh:
-		case VAProfileH264StereoHigh:
-		case VAProfileMPEG2Simple:
-		case VAProfileMPEG2Main:
-			entrypoints[0] = VAEntrypointVLD;
-			*entrypoints_count = 1;
-			break;
+	case VAProfileH264Main:
+	case VAProfileH264High:
+	case VAProfileH264ConstrainedBaseline:
+	case VAProfileH264MultiviewHigh:
+	case VAProfileH264StereoHigh:
+	case VAProfileMPEG2Simple:
+	case VAProfileMPEG2Main:
+		entrypoints[0] = VAEntrypointVLD;
+		*entrypoints_count = 1;
+		break;
 
-		default:
-			*entrypoints_count = 0;
-			break;
+	default:
+		*entrypoints_count = 0;
+		break;
 	}
 
 	return VA_STATUS_SUCCESS;
 }
 
 VAStatus SunxiCedrusQueryConfigAttributes(VADriverContextP context,
-	VAConfigID config_id, VAProfile *profile, VAEntrypoint *entrypoint,
-	VAConfigAttrib *attributes, int *attributes_count)
+					  VAConfigID config_id,
+					  VAProfile *profile,
+					  VAEntrypoint *entrypoint,
+					  VAConfigAttrib *attributes,
+					  int *attributes_count)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -182,7 +191,7 @@ VAStatus SunxiCedrusQueryConfigAttributes(VADriverContextP context,
 		*entrypoint = config_object->entrypoint;
 
 	if (attributes_count != NULL)
-		*attributes_count =  config_object->attributes_count;
+		*attributes_count = config_object->attributes_count;
 
 	/* Attributes might be NULL to retrieve the associated count. */
 	if (attributes != NULL)
@@ -193,39 +202,43 @@ VAStatus SunxiCedrusQueryConfigAttributes(VADriverContextP context,
 }
 
 VAStatus SunxiCedrusGetConfigAttributes(VADriverContextP context,
-	VAProfile profile, VAEntrypoint entrypoint, VAConfigAttrib *attributes,
-	int attributes_count)
+					VAProfile profile,
+					VAEntrypoint entrypoint,
+					VAConfigAttrib *attributes,
+					int attributes_count)
 {
 	unsigned int i;
 
-	for (i = 0; i < attributes_count; i++) {
+	for (i = 0; i < attributes_count; i++)
 		switch (attributes[i].type) {
-			case VAConfigAttribRTFormat:
-				attributes[i].value = VA_RT_FORMAT_YUV420;
-				break;
-			default:
-				attributes[i].value = VA_ATTRIB_NOT_SUPPORTED;
-				break;
+		case VAConfigAttribRTFormat:
+			attributes[i].value = VA_RT_FORMAT_YUV420;
+			break;
+		default:
+			attributes[i].value = VA_ATTRIB_NOT_SUPPORTED;
+			break;
 		}
-	}
 
 	return VA_STATUS_SUCCESS;
 }
 
 VAStatus SunxiCedrusQueryDisplayAttributes(VADriverContextP context,
-	VADisplayAttribute *attributes, int *attributes_count)
+					   VADisplayAttribute *attributes,
+					   int *attributes_count)
 {
 	return VA_STATUS_ERROR_UNIMPLEMENTED;
 }
 
 VAStatus SunxiCedrusGetDisplayAttributes(VADriverContextP context,
-	VADisplayAttribute *attributes, int attributes_count)
+					 VADisplayAttribute *attributes,
+					 int attributes_count)
 {
 	return VA_STATUS_ERROR_UNIMPLEMENTED;
 }
 
 VAStatus SunxiCedrusSetDisplayAttributes(VADriverContextP context,
-	VADisplayAttribute *attributes, int attributes_count)
+					 VADisplayAttribute *attributes,
+					 int attributes_count)
 {
 	return VA_STATUS_ERROR_UNIMPLEMENTED;
 }

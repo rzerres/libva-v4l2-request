@@ -62,15 +62,19 @@ static VAStatus SunxiCedrusMapSurfaces(struct sunxi_cedrus_driver_data *driver,
 		}
 
 		if (surface->destination_index != i)
-			cprint("Mismatch between source index %d and destination index %d for surface %d\n", i, surface->destination_index, ids[i]);
+			cprint("surface %d: indices mismatch (s: %d vs d:%d)\n",
+			       ids[i], surface->destination_index, i);
 
-		rc = v4l2_request_buffer(driver->video_fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, i, &length, &offset);
+		rc = v4l2_request_buffer(driver->video_fd,
+					 V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, i,
+					 &length, &offset);
 		if (rc < 0) {
 			status = VA_STATUS_ERROR_ALLOCATION_FAILED;
 			goto err_unroll;
 		}
 
-		data = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_SHARED, driver->video_fd, offset);
+		data = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_SHARED,
+			    driver->video_fd, offset);
 		if (data == MAP_FAILED) {
 			status = VA_STATUS_ERROR_ALLOCATION_FAILED;
 			goto err_unroll;
@@ -108,7 +112,8 @@ static void SunxiCedrusUnmapSurfaces(struct sunxi_cedrus_driver_data *data,
 		return;
 
 	for (i = 0; i < context->surfaces_count; i++) {
-		struct object_surface *surface = SURFACE(data, context->surfaces_ids[i]);
+		struct object_surface *surface = SURFACE(data,
+							 context->surfaces_ids[i]);
 
 		if (surface == NULL)
 			continue;
@@ -121,9 +126,10 @@ static void SunxiCedrusUnmapSurfaces(struct sunxi_cedrus_driver_data *data,
 }
 
 VAStatus SunxiCedrusCreateContext(VADriverContextP context,
-	VAConfigID config_id, int picture_width, int picture_height, int flags,
-	VASurfaceID *surfaces_ids, int surfaces_count,
-	VAContextID *context_id)
+				  VAConfigID config_id, int picture_width,
+				  int picture_height, int flags,
+				  VASurfaceID *surfaces_ids, int surfaces_count,
+				  VAContextID *context_id)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -145,31 +151,35 @@ VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 		return VA_STATUS_ERROR_ALLOCATION_FAILED;
 
 	switch (config_object->profile) {
-		case VAProfileH264Main:
-		case VAProfileH264High:
-		case VAProfileH264ConstrainedBaseline:
-		case VAProfileH264MultiviewHigh:
-		case VAProfileH264StereoHigh:
-			pixelformat = V4L2_PIX_FMT_H264_SLICE;
-			break;
+	case VAProfileH264Main:
+	case VAProfileH264High:
+	case VAProfileH264ConstrainedBaseline:
+	case VAProfileH264MultiviewHigh:
+	case VAProfileH264StereoHigh:
+		pixelformat = V4L2_PIX_FMT_H264_SLICE;
+		break;
 
-		case VAProfileMPEG2Simple:
-		case VAProfileMPEG2Main:
-			pixelformat = V4L2_PIX_FMT_MPEG2_FRAME;
-			break;
+	case VAProfileMPEG2Simple:
+	case VAProfileMPEG2Main:
+		pixelformat = V4L2_PIX_FMT_MPEG2_FRAME;
+		break;
 
-		default:
-			status = VA_STATUS_ERROR_UNSUPPORTED_PROFILE;
-			goto err_free_context_object;
+	default:
+		status = VA_STATUS_ERROR_UNSUPPORTED_PROFILE;
+		goto err_free_context_object;
 	}
 
-	rc = v4l2_set_format(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, pixelformat, picture_width, picture_height);
+	rc = v4l2_set_format(driver_data->video_fd,
+			     V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, pixelformat,
+			     picture_width, picture_height);
 	if (rc < 0) {
 		status = VA_STATUS_ERROR_OPERATION_FAILED;
 		goto err_free_context_object;
 	}
 
-	rc = v4l2_create_buffers(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, surfaces_count);
+	rc = v4l2_create_buffers(driver_data->video_fd,
+				 V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE,
+				 surfaces_count);
 	if (rc < 0) {
 		status = VA_STATUS_ERROR_ALLOCATION_FAILED;
 		goto err_free_context_object;
@@ -192,13 +202,15 @@ VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 	if (status != VA_STATUS_SUCCESS)
 		goto err_free_ids;
 
-	rc = v4l2_set_stream(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, true);
+	rc = v4l2_set_stream(driver_data->video_fd,
+			     V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, true);
 	if (rc < 0) {
 		status = VA_STATUS_ERROR_OPERATION_FAILED;
 		goto err_surface;
 	}
 
-	rc = v4l2_set_stream(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, true);
+	rc = v4l2_set_stream(driver_data->video_fd,
+			     V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, true);
 	if (rc < 0) {
 		status = VA_STATUS_ERROR_OPERATION_FAILED;
 		goto err_surface;
@@ -219,13 +231,14 @@ err_surface:
 err_free_ids:
 	free(ids);
 err_free_context_object:
-	object_heap_free(&driver_data->context_heap, (struct object_base *) context_object);
+	object_heap_free(&driver_data->context_heap,
+			 (struct object_base *) context_object);
 
 	return status;
 }
 
 VAStatus SunxiCedrusDestroyContext(VADriverContextP context,
-	VAContextID context_id)
+				   VAContextID context_id)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -236,13 +249,16 @@ VAStatus SunxiCedrusDestroyContext(VADriverContextP context,
 	if (context_object == NULL)
 		return VA_STATUS_ERROR_INVALID_CONTEXT;
 
-	object_heap_free(&driver_data->context_heap, (struct object_base *) context_object);
+	object_heap_free(&driver_data->context_heap,
+			 (struct object_base *) context_object);
 
-	rc = v4l2_set_stream(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, false);
+	rc = v4l2_set_stream(driver_data->video_fd,
+			     V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, false);
 	if (rc < 0)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 
-	rc = v4l2_set_stream(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, false);
+	rc = v4l2_set_stream(driver_data->video_fd,
+			     V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, false);
 	if (rc < 0)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 

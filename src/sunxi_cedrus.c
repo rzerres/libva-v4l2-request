@@ -53,7 +53,7 @@
 
 /* Set default visibility for the init function only. */
 VAStatus __attribute__((visibility("default")))
-	VA_DRIVER_INIT_FUNC(VADriverContextP context);
+VA_DRIVER_INIT_FUNC(VADriverContextP context);
 
 VAStatus VA_DRIVER_INIT_FUNC(VADriverContextP context)
 {
@@ -112,7 +112,8 @@ VAStatus VA_DRIVER_INIT_FUNC(VADriverContextP context)
 	vtable->vaDestroySubpicture = SunxiCedrusDestroySubpicture;
 	vtable->vaSetSubpictureImage = SunxiCedrusSetSubpictureImage;
 	vtable->vaSetSubpictureChromakey = SunxiCedrusSetSubpictureChromakey;
-	vtable->vaSetSubpictureGlobalAlpha = SunxiCedrusSetSubpictureGlobalAlpha;
+	vtable->vaSetSubpictureGlobalAlpha =
+		SunxiCedrusSetSubpictureGlobalAlpha;
 	vtable->vaAssociateSubpicture = SunxiCedrusAssociateSubpicture;
 	vtable->vaDeassociateSubpicture = SunxiCedrusDeassociateSubpicture;
 	vtable->vaQueryDisplayAttributes = SunxiCedrusQueryDisplayAttributes;
@@ -127,11 +128,16 @@ VAStatus VA_DRIVER_INIT_FUNC(VADriverContextP context)
 
 	context->pDriverData = driver_data;
 
-	object_heap_init(&driver_data->config_heap, sizeof(struct object_config), CONFIG_ID_OFFSET);
-	object_heap_init(&driver_data->context_heap, sizeof(struct object_context), CONTEXT_ID_OFFSET);
-	object_heap_init(&driver_data->surface_heap, sizeof(struct object_surface), SURFACE_ID_OFFSET);
-	object_heap_init(&driver_data->buffer_heap, sizeof(struct object_buffer), BUFFER_ID_OFFSET);
-	object_heap_init(&driver_data->image_heap, sizeof(struct object_image), IMAGE_ID_OFFSET);
+	object_heap_init(&driver_data->config_heap,
+			 sizeof(struct object_config), CONFIG_ID_OFFSET);
+	object_heap_init(&driver_data->context_heap,
+			 sizeof(struct object_context), CONTEXT_ID_OFFSET);
+	object_heap_init(&driver_data->surface_heap,
+			 sizeof(struct object_surface), SURFACE_ID_OFFSET);
+	object_heap_init(&driver_data->buffer_heap,
+			 sizeof(struct object_buffer), BUFFER_ID_OFFSET);
+	object_heap_init(&driver_data->image_heap, sizeof(struct object_image),
+			 IMAGE_ID_OFFSET);
 
 	video_path = getenv("LIBVA_CEDRUS_VIDEO_PATH");
 	if (video_path == NULL)
@@ -143,7 +149,8 @@ VAStatus VA_DRIVER_INIT_FUNC(VADriverContextP context)
 
 	rc = ioctl(video_fd, VIDIOC_QUERYCAP, &capability);
 	if (rc < 0 || !(capability.capabilities & V4L2_CAP_VIDEO_M2M_MPLANE)) {
-		cprint("Video device %s does not support m2m mplanes\n", video_path);
+		cprint("Video device %s does not support m2m mplanes\n",
+		       video_path);
 		status = VA_STATUS_ERROR_OPERATION_FAILED;
 		goto err_close_video;
 	}

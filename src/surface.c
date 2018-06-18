@@ -44,7 +44,8 @@
 #include "utils.h"
 
 VAStatus SunxiCedrusCreateSurfaces(VADriverContextP context, int width,
-	int height, int format, int surfaces_count, VASurfaceID *surfaces_ids)
+				   int height, int format, int surfaces_count,
+				   VASurfaceID *surfaces_ids)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -59,11 +60,15 @@ VAStatus SunxiCedrusCreateSurfaces(VADriverContextP context, int width,
 	if (format != VA_RT_FORMAT_YUV420)
 		return VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT;
 
-	rc = v4l2_set_format(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, V4L2_PIX_FMT_MB32_NV12, width, height);
+	rc = v4l2_set_format(driver_data->video_fd,
+			     V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
+			     V4L2_PIX_FMT_MB32_NV12, width, height);
 	if (rc < 0)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 
-	rc = v4l2_create_buffers(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, surfaces_count);
+	rc = v4l2_create_buffers(driver_data->video_fd,
+				 V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
+				 surfaces_count);
 	if (rc < 0)
 		return VA_STATUS_ERROR_ALLOCATION_FAILED;
 
@@ -73,15 +78,21 @@ VAStatus SunxiCedrusCreateSurfaces(VADriverContextP context, int width,
 		if (surface_object == NULL)
 			return VA_STATUS_ERROR_ALLOCATION_FAILED;
 
-		rc = v4l2_request_buffer(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, i, length, offset);
+		rc = v4l2_request_buffer(driver_data->video_fd,
+					 V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, i,
+					 length, offset);
 		if (rc < 0)
 			return VA_STATUS_ERROR_ALLOCATION_FAILED;
 
-		destination_data[0] = mmap(NULL, length[0], PROT_READ | PROT_WRITE, MAP_SHARED, driver_data->video_fd, offset[0]);
+		destination_data[0] = mmap(NULL, length[0],
+					   PROT_READ | PROT_WRITE, MAP_SHARED,
+					   driver_data->video_fd, offset[0]);
 		if (destination_data[0] == MAP_FAILED)
 			return VA_STATUS_ERROR_ALLOCATION_FAILED;
 
-		destination_data[1] = mmap(NULL, length[1], PROT_READ | PROT_WRITE, MAP_SHARED, driver_data->video_fd, offset[1]);
+		destination_data[1] = mmap(NULL, length[1],
+					   PROT_READ | PROT_WRITE, MAP_SHARED,
+					   driver_data->video_fd, offset[1]);
 		if (destination_data[1] == MAP_FAILED)
 			return VA_STATUS_ERROR_ALLOCATION_FAILED;
 
@@ -94,7 +105,8 @@ VAStatus SunxiCedrusCreateSurfaces(VADriverContextP context, int width,
 		surface_object->destination_index = i;
 
 		for (j = 0; j < 2; j++) {
-			surface_object->destination_data[j] = destination_data[j];
+			surface_object->destination_data[j] =
+				destination_data[j];
 			surface_object->destination_size[j] = length[j];
 		}
 
@@ -110,7 +122,8 @@ VAStatus SunxiCedrusCreateSurfaces(VADriverContextP context, int width,
 }
 
 VAStatus SunxiCedrusDestroySurfaces(VADriverContextP context,
-	VASurfaceID *surfaces_ids, int surfaces_count)
+				    VASurfaceID *surfaces_ids,
+				    int surfaces_count)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -122,24 +135,29 @@ VAStatus SunxiCedrusDestroySurfaces(VADriverContextP context,
 		if (surface_object == NULL)
 			return VA_STATUS_ERROR_INVALID_SURFACE;
 
-		if (surface_object->source_data != NULL && surface_object->source_size > 0)
-			munmap(surface_object->source_data, surface_object->source_size);
+		if (surface_object->source_data != NULL &&
+		    surface_object->source_size > 0)
+			munmap(surface_object->source_data,
+			       surface_object->source_size);
 
 		if (surface_object->request_fd >= 0)
 			close(surface_object->request_fd);
 
 		for (j = 0; j < 2; j++)
-			if (surface_object->destination_data[j] != NULL && surface_object->destination_size[j] > 0)
-				munmap(surface_object->destination_data[j], surface_object->destination_size[j]);
+			if (surface_object->destination_data[j] != NULL &&
+			    surface_object->destination_size[j] > 0)
+				munmap(surface_object->destination_data[j],
+				       surface_object->destination_size[j]);
 
-		object_heap_free(&driver_data->surface_heap, (struct object_base *) surface_object);
+		object_heap_free(&driver_data->surface_heap,
+				 (struct object_base *) surface_object);
 	}
 
 	return VA_STATUS_SUCCESS;
 }
 
 VAStatus SunxiCedrusSyncSurface(VADriverContextP context,
-	VASurfaceID surface_id)
+				VASurfaceID surface_id)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -178,13 +196,17 @@ VAStatus SunxiCedrusSyncSurface(VADriverContextP context,
 		goto err_close_request_fd;
 	}
 
-	rc = v4l2_dequeue_buffer(driver_data->video_fd, request_fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, surface_object->source_index);
+	rc = v4l2_dequeue_buffer(driver_data->video_fd, request_fd,
+				 V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE,
+				 surface_object->source_index);
 	if (rc < 0) {
 		status = VA_STATUS_ERROR_OPERATION_FAILED;
 		goto err_close_request_fd;
 	}
 
-	rc = v4l2_dequeue_buffer(driver_data->video_fd, request_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, surface_object->destination_index);
+	rc = v4l2_dequeue_buffer(driver_data->video_fd, request_fd,
+				 V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
+				 surface_object->destination_index);
 	if (rc < 0) {
 		status = VA_STATUS_ERROR_OPERATION_FAILED;
 		goto err_close_request_fd;
@@ -202,7 +224,8 @@ err_close_request_fd:
 }
 
 VAStatus SunxiCedrusQuerySurfaceStatus(VADriverContextP context,
-	VASurfaceID surface_id, VASurfaceStatus *status)
+				       VASurfaceID surface_id,
+				       VASurfaceStatus *status)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -218,17 +241,21 @@ VAStatus SunxiCedrusQuerySurfaceStatus(VADriverContextP context,
 }
 
 VAStatus SunxiCedrusPutSurface(VADriverContextP context, VASurfaceID surface_id,
-	void *draw, short src_x, short src_y, unsigned short src_width,
-	unsigned short src_height, short dst_x, short dst_y,
-	unsigned short dst_width, unsigned short dst_height,
-	VARectangle *cliprects, unsigned int cliprects_count,
-	unsigned int flags)
+			       void *draw, short src_x, short src_y,
+			       unsigned short src_width,
+			       unsigned short src_height, short dst_x,
+			       short dst_y,
+			       unsigned short dst_width,
+			       unsigned short dst_height,
+			       VARectangle *cliprects,
+			       unsigned int cliprects_count,
+			       unsigned int flags)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
 	GC gc;
 	Display *display;
-	const XID xid = (XID)(uintptr_t)draw;
+	const XID xid = (XID) (uintptr_t) draw;
 	XColor xcolor;
 	int screen;
 	Colormap cm;
@@ -246,9 +273,9 @@ VAStatus SunxiCedrusPutSurface(VADriverContextP context, VASurfaceID surface_id,
 		exit(1);
 	}
 
-	cprint("warning: using vaPutSurface with sunxi-cedrus is not recommended\n");
+	cprint("warning: using vaPutSurface is not recommended\n");
 	screen = DefaultScreen(display);
-	gc =  XCreateGC(display, RootWindow(display, screen), 0, NULL);
+	gc = XCreateGC(display, RootWindow(display, screen), 0, NULL);
 	XSync(display, False);
 
 	cm = DefaultColormap(display, screen);
@@ -270,16 +297,20 @@ VAStatus SunxiCedrusPutSurface(VADriverContextP context, VASurfaceID surface_id,
 }
 
 VAStatus SunxiCedrusLockSurface(VADriverContextP context,
-	VASurfaceID surface_id, unsigned int *fourcc, unsigned int *luma_stride,
-	unsigned int *chroma_u_stride, unsigned int *chroma_v_stride,
-	unsigned int *luma_offset, unsigned int *chroma_u_offset,
-	unsigned int *chroma_v_offset, unsigned int *buffer_name, void **buffer)
+				VASurfaceID surface_id, unsigned int *fourcc,
+				unsigned int *luma_stride,
+				unsigned int *chroma_u_stride,
+				unsigned int *chroma_v_stride,
+				unsigned int *luma_offset,
+				unsigned int *chroma_u_offset,
+				unsigned int *chroma_v_offset,
+				unsigned int *buffer_name, void **buffer)
 {
 	return VA_STATUS_ERROR_UNIMPLEMENTED;
 }
 
 VAStatus SunxiCedrusUnlockSurface(VADriverContextP context,
-	VASurfaceID surface_id)
+				  VASurfaceID surface_id)
 {
 	return VA_STATUS_ERROR_UNIMPLEMENTED;
 }

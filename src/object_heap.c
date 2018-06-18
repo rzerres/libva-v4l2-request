@@ -47,7 +47,8 @@ static int object_heap_expand(object_heap_p heap)
 		int new_num_buckets = heap->num_buckets + 8;
 		void **new_bucket;
 
-		new_bucket = realloc(heap->bucket, new_num_buckets * sizeof(void *));
+		new_bucket = realloc(heap->bucket,
+				     new_num_buckets * sizeof(void *));
 		if (NULL == new_bucket) {
 			return -1;
 		}
@@ -134,7 +135,8 @@ static object_base_p object_heap_lookup_unlocked(object_heap_p heap, int id)
 	object_base_p obj;
 	int bucket_index, obj_index;
 
-	if ((id < heap->id_offset) || (id > (heap->heap_size + heap->id_offset))) {
+	if ((id < heap->id_offset) ||
+	    (id > (heap->heap_size + heap->id_offset))) {
 		return NULL;
 	}
 	id &= OBJECT_HEAP_ID_MASK;
@@ -173,7 +175,8 @@ object_base_p object_heap_first(object_heap_p heap, object_heap_iterator *iter)
  * Iterate over all objects in the heap.
  * Returns a pointer to the next object on the heap, returns NULL if heap is empty.
  */
-static object_base_p object_heap_next_unlocked(object_heap_p heap, object_heap_iterator *iter)
+static object_base_p object_heap_next_unlocked(object_heap_p heap,
+					       object_heap_iterator *iter)
 {
 	object_base_p obj;
 	int bucket_index, obj_index;
@@ -242,9 +245,8 @@ void object_heap_destroy(object_heap_p heap)
 		ASSERT(obj->next_free != ALLOCATED);
 	}
 
-	for (i = 0; i < heap->heap_size / heap->heap_increment; i++) {
+	for (i = 0; i < heap->heap_size / heap->heap_increment; i++)
 		free(heap->bucket[i]);
-	}
 
 	pthread_mutex_destroy(&heap->mutex);
 

@@ -34,7 +34,7 @@
 #include "tiled_yuv.h"
 
 VAStatus SunxiCedrusCreateImage(VADriverContextP context, VAImageFormat *format,
-	int width, int height, VAImage *image)
+				int width, int height, VAImage *image)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -52,9 +52,11 @@ VAStatus SunxiCedrusCreateImage(VADriverContextP context, VAImageFormat *format,
 	if (image_object == NULL)
 		return VA_STATUS_ERROR_ALLOCATION_FAILED;
 
-	status = SunxiCedrusCreateBuffer(context, 0, VAImageBufferType, sizeY + sizeUV, 1, NULL, &buffer_id);
+	status = SunxiCedrusCreateBuffer(context, 0, VAImageBufferType,
+					 sizeY + sizeUV, 1, NULL, &buffer_id);
 	if (status != VA_STATUS_SUCCESS) {
-		object_heap_free(&driver_data->image_heap, (struct object_base *) image_object);
+		object_heap_free(&driver_data->image_heap,
+				 (struct object_base *) image_object);
 		return status;
 	}
 
@@ -70,7 +72,7 @@ VAStatus SunxiCedrusCreateImage(VADriverContextP context, VAImageFormat *format,
 	image->pitches[1] = (width + 31) & ~31;
 	image->offsets[0] = 0;
 	image->offsets[1] = sizeY;
-	image->data_size  = sizeY + sizeUV;
+	image->data_size = sizeY + sizeUV;
 	image->buf = buffer_id;
 	image->image_id = id;
 
@@ -92,13 +94,14 @@ VAStatus SunxiCedrusDestroyImage(VADriverContextP context, VAImageID image_id)
 	if (status != VA_STATUS_SUCCESS)
 		return status;
 
-	object_heap_free(&driver_data->image_heap, (struct object_base *) image_object);
+	object_heap_free(&driver_data->image_heap,
+			 (struct object_base *) image_object);
 
 	return VA_STATUS_SUCCESS;
 }
 
 VAStatus SunxiCedrusDeriveImage(VADriverContextP context,
-	VASurfaceID surface_id, VAImage *image)
+				VASurfaceID surface_id, VAImage *image)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -121,7 +124,8 @@ VAStatus SunxiCedrusDeriveImage(VADriverContextP context,
 
 	format.fourcc = VA_FOURCC_NV12;
 
-	status = SunxiCedrusCreateImage(context, &format, surface_object->width, surface_object->height, image);
+	status = SunxiCedrusCreateImage(context, &format, surface_object->width,
+					surface_object->height, image);
 	if (status != VA_STATUS_SUCCESS)
 		return status;
 
@@ -130,8 +134,12 @@ VAStatus SunxiCedrusDeriveImage(VADriverContextP context,
 		return VA_STATUS_ERROR_INVALID_BUFFER;
 
 	/* TODO: Use an appropriate DRM plane instead */
-	tiled_to_planar(surface_object->destination_data[0], buffer_object->data, image->pitches[0], image->width, image->height);
-	tiled_to_planar(surface_object->destination_data[1], buffer_object->data + image->width*image->height, image->pitches[1], image->width, image->height/2);
+	tiled_to_planar(surface_object->destination_data[0],
+			buffer_object->data, image->pitches[0], image->width,
+			image->height);
+	tiled_to_planar(surface_object->destination_data[1],
+			buffer_object->data + image->width*image->height,
+			image->pitches[1], image->width, image->height/2);
 
 	surface_object->status = VASurfaceReady;
 
@@ -139,7 +147,8 @@ VAStatus SunxiCedrusDeriveImage(VADriverContextP context,
 }
 
 VAStatus SunxiCedrusQueryImageFormats(VADriverContextP context,
-	VAImageFormat *formats, int *formats_count)
+				      VAImageFormat *formats,
+				      int *formats_count)
 {
 	formats[0].fourcc = VA_FOURCC_NV12;
 	*formats_count = 1;
@@ -148,22 +157,25 @@ VAStatus SunxiCedrusQueryImageFormats(VADriverContextP context,
 }
 
 VAStatus SunxiCedrusSetImagePalette(VADriverContextP context,
-	VAImageID image_id, unsigned char *palette)
+				    VAImageID image_id, unsigned char *palette)
 {
 	return VA_STATUS_SUCCESS;
 }
 
 VAStatus SunxiCedrusGetImage(VADriverContextP context, VASurfaceID surface_id,
-	int x, int y, unsigned int width, unsigned int height,
-	VAImageID image_id)
+			     int x, int y, unsigned int width,
+			     unsigned int height,
+			     VAImageID image_id)
 {
 	return VA_STATUS_SUCCESS;
 }
 
 VAStatus SunxiCedrusPutImage(VADriverContextP context, VASurfaceID surface_id,
-	VAImageID image, int src_x, int src_y, unsigned int src_width,
-	unsigned int src_height, int dst_x, int dst_y, unsigned int dst_width,
-	unsigned int dst_height)
+			     VAImageID image, int src_x, int src_y,
+			     unsigned int src_width,
+			     unsigned int src_height, int dst_x, int dst_y,
+			     unsigned int dst_width,
+			     unsigned int dst_height)
 {
 	return VA_STATUS_SUCCESS;
 }

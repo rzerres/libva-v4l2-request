@@ -40,8 +40,10 @@
 #include "v4l2.h"
 
 VAStatus SunxiCedrusCreateBuffer(VADriverContextP context,
-	VAContextID context_id, VABufferType type, unsigned int size,
-	unsigned int count, void *data, VABufferID *buffer_id)
+				 VAContextID context_id, VABufferType type,
+				 unsigned int size,
+				 unsigned int count, void *data,
+				 VABufferID *buffer_id)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -51,15 +53,15 @@ VAStatus SunxiCedrusCreateBuffer(VADriverContextP context,
 	VABufferID id;
 
 	switch (type) {
-		case VAPictureParameterBufferType:
-		case VAIQMatrixBufferType:
-		case VASliceParameterBufferType:
-		case VASliceDataBufferType:
-		case VAImageBufferType:
-			break;
+	case VAPictureParameterBufferType:
+	case VAIQMatrixBufferType:
+	case VASliceParameterBufferType:
+	case VASliceDataBufferType:
+	case VAImageBufferType:
+		break;
 
-		default:
-			return VA_STATUS_ERROR_UNSUPPORTED_BUFFERTYPE;
+	default:
+		return VA_STATUS_ERROR_UNSUPPORTED_BUFFERTYPE;
 	}
 
 	id = object_heap_allocate(&driver_data->buffer_heap);
@@ -87,13 +89,14 @@ VAStatus SunxiCedrusCreateBuffer(VADriverContextP context,
 	return VA_STATUS_SUCCESS;
 
 err_free_object:
-	object_heap_free(&driver_data->buffer_heap, (struct object_base *) buffer_object);
+	object_heap_free(&driver_data->buffer_heap,
+			 (struct object_base *) buffer_object);
 
 	return status;
 }
 
 VAStatus SunxiCedrusDestroyBuffer(VADriverContextP context,
-	VABufferID buffer_id)
+				  VABufferID buffer_id)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -106,13 +109,14 @@ VAStatus SunxiCedrusDestroyBuffer(VADriverContextP context,
 	if (buffer_object->data != NULL)
 		free(buffer_object->data);
 
-	object_heap_free(&driver_data->buffer_heap, (struct object_base *) buffer_object);
+	object_heap_free(&driver_data->buffer_heap,
+			 (struct object_base *) buffer_object);
 
 	return VA_STATUS_SUCCESS;
 }
 
 VAStatus SunxiCedrusMapBuffer(VADriverContextP context, VABufferID buffer_id,
-	void **data_map)
+			      void **data_map)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -144,7 +148,8 @@ VAStatus SunxiCedrusUnmapBuffer(VADriverContextP context, VABufferID buffer_id)
 }
 
 VAStatus SunxiCedrusBufferSetNumElements(VADriverContextP context,
-	VABufferID buffer_id, unsigned int count)
+					 VABufferID buffer_id,
+					 unsigned int count)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -163,7 +168,8 @@ VAStatus SunxiCedrusBufferSetNumElements(VADriverContextP context,
 }
 
 VAStatus SunxiCedrusBufferInfo(VADriverContextP context, VABufferID buffer_id,
-	VABufferType *type, unsigned int *size, unsigned int *count)
+			       VABufferType *type, unsigned int *size,
+			       unsigned int *count)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
