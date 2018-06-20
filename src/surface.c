@@ -196,7 +196,7 @@ VAStatus SunxiCedrusSyncSurface(VADriverContextP context,
 		goto err_close_request_fd;
 	}
 
-	rc = v4l2_dequeue_buffer(driver_data->video_fd, request_fd,
+	rc = v4l2_dequeue_buffer(driver_data->video_fd, -1,
 				 V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE,
 				 surface_object->source_index);
 	if (rc < 0) {
@@ -204,7 +204,7 @@ VAStatus SunxiCedrusSyncSurface(VADriverContextP context,
 		goto err_close_request_fd;
 	}
 
-	rc = v4l2_dequeue_buffer(driver_data->video_fd, request_fd,
+	rc = v4l2_dequeue_buffer(driver_data->video_fd, -1,
 				 V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
 				 surface_object->destination_index);
 	if (rc < 0) {

@@ -161,7 +161,7 @@ VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 
 	case VAProfileMPEG2Simple:
 	case VAProfileMPEG2Main:
-		pixelformat = V4L2_PIX_FMT_MPEG2_FRAME;
+		pixelformat = V4L2_PIX_FMT_MPEG2_SLICE;
 		break;
 
 	default:

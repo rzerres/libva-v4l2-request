@@ -40,14 +40,12 @@ int mpeg2_fill_controls(struct sunxi_cedrus_driver_data *driver,
 {
 	VAPictureParameterBufferMPEG2 *parameters =
 		&surface->params.mpeg2.picture;
-	struct v4l2_ctrl_mpeg2_frame_hdr header;
+	struct v4l2_ctrl_mpeg2_slice_header header;
 	struct object_surface *forward_reference_surface;
 	struct object_surface *backward_reference_surface;
 	int rc;
 
 	memset(&header, 0, sizeof(header));
-
-	header.type = MPEG2;
 
 	header.width = surface->width;
 	header.height = surface->height;
@@ -95,7 +93,7 @@ int mpeg2_fill_controls(struct sunxi_cedrus_driver_data *driver,
 		header.backward_ref_index = surface->destination_index;
 
 	rc = v4l2_set_control(driver->video_fd, surface->request_fd,
-			      V4L2_CID_MPEG_VIDEO_MPEG2_FRAME_HDR,
+			      V4L2_CID_MPEG_VIDEO_MPEG2_SLICE_HEADER,
 			      &header, sizeof(header));
 	if (rc < 0)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
