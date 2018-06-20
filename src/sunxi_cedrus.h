@@ -27,6 +27,7 @@
 #define _SUNXI_CEDRUS_H_
 
 #include <va/va.h>
+#include <va/va_drmcommon.h>
 #include "object_heap.h"
 #include "context.h"
 

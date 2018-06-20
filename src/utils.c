@@ -26,17 +26,26 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "sunxi_cedrus.h"
 #include "utils.h"
+
+static int log_fd = -1;
 
 void sunxi_cedrus_log(const char *format, ...)
 {
 	va_list arguments;
 
+	if (log_fd < 0)
+		log_fd = open("/libva.log", O_CREAT | O_TRUNC | O_RDWR, 0644);
+
 	fprintf(stderr, "%s: ", SUNXI_CEDRUS_STR_VENDOR);
 
 	va_start(arguments, format);
 	vfprintf(stderr, format, arguments);
+	vdprintf(log_fd, format, arguments);
+
 	va_end(arguments);
 }

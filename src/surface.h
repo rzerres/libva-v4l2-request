@@ -54,6 +54,10 @@ struct object_surface {
 	int request_fd;
 };
 
+VAStatus SunxiCedrusCreateSurfaces2(VADriverContextP context,
+	unsigned int format, unsigned int width, unsigned int height,
+	VASurfaceID *surfaces_ids, unsigned int surfaces_count,
+	VASurfaceAttrib *attributes, unsigned int attributes_count);
 VAStatus SunxiCedrusCreateSurfaces(VADriverContextP context, int width,
 	int height, int format, int surfaces_count, VASurfaceID *surfaces_ids);
 VAStatus SunxiCedrusDestroySurfaces(VADriverContextP context,
@@ -76,5 +80,8 @@ VAStatus SunxiCedrusLockSurface(VADriverContextP context,
 	void **buffer);
 VAStatus SunxiCedrusUnlockSurface(VADriverContextP context,
 	VASurfaceID surface_id);
+VAStatus SunxiCedrusExportSurfaceHandle(VADriverContextP context,
+	VASurfaceID surface_id, uint32_t mem_type, uint32_t flags,
+	void *descriptor);
 
 #endif

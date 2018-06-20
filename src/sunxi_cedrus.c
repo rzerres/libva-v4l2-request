@@ -67,6 +67,8 @@ VAStatus VA_DRIVER_INIT_FUNC(VADriverContextP context)
 	char *media_path;
 	int rc;
 
+	sunxi_cedrus_log("Starting up!\n");
+
 	context->version_major = VA_MAJOR_VERSION;
 	context->version_minor = VA_MINOR_VERSION;
 	context->max_profiles = SUNXI_CEDRUS_MAX_PROFILES;
@@ -86,6 +88,7 @@ VAStatus VA_DRIVER_INIT_FUNC(VADriverContextP context)
 	vtable->vaDestroyConfig = SunxiCedrusDestroyConfig;
 	vtable->vaGetConfigAttributes = SunxiCedrusGetConfigAttributes;
 	vtable->vaCreateSurfaces = SunxiCedrusCreateSurfaces;
+	vtable->vaCreateSurfaces2 = SunxiCedrusCreateSurfaces2;
 	vtable->vaDestroySurfaces = SunxiCedrusDestroySurfaces;
 	vtable->vaCreateContext = SunxiCedrusCreateContext;
 	vtable->vaDestroyContext = SunxiCedrusDestroyContext;
@@ -120,7 +123,10 @@ VAStatus VA_DRIVER_INIT_FUNC(VADriverContextP context)
 	vtable->vaSetDisplayAttributes = SunxiCedrusSetDisplayAttributes;
 	vtable->vaLockSurface = SunxiCedrusLockSurface;
 	vtable->vaUnlockSurface = SunxiCedrusUnlockSurface;
+	vtable->vaExportSurfaceHandle = SunxiCedrusExportSurfaceHandle;
 	vtable->vaBufferInfo = SunxiCedrusBufferInfo;
+	vtable->vaAcquireBufferHandle = SunxiCedrusAcquireBufferHandle;
+	vtable->vaReleaseBufferHandle = SunxiCedrusReleaseBufferHandle;
 
 	driver_data = (struct sunxi_cedrus_driver_data *) malloc(sizeof(*driver_data));
 	memset(driver_data, 0, sizeof(*driver_data));
@@ -137,6 +143,9 @@ VAStatus VA_DRIVER_INIT_FUNC(VADriverContextP context)
 	if (video_path == NULL)
 		video_path = "/dev/video0";
 
+	sunxi_cedrus_log("Opening %s\n", video_path);
+
+
 	video_fd = open(video_path, O_RDWR | O_NONBLOCK);
 	if (video_fd < 0)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
@@ -152,12 +161,16 @@ VAStatus VA_DRIVER_INIT_FUNC(VADriverContextP context)
 	if (media_path == NULL)
 		media_path = "/dev/media0";
 
+	sunxi_cedrus_log("Opening %s\n", media_path);
+
 	media_fd = open(media_path, O_RDWR | O_NONBLOCK);
 	if (media_fd < 0)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 
 	driver_data->video_fd = video_fd;
 	driver_data->media_fd = media_fd;
+
+	sunxi_cedrus_log("Done\n");
 
 	status = VA_STATUS_SUCCESS;
 	goto complete;

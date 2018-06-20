@@ -30,19 +30,23 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <errno.h>
 
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 
 #include <linux/videodev2.h>
+#include <drm_fourcc.h>
 
 #include "v4l2.h"
 #include "media.h"
 #include "utils.h"
 
-VAStatus SunxiCedrusCreateSurfaces(VADriverContextP context, int width,
-	int height, int format, int surfaces_count, VASurfaceID *surfaces_ids)
+VAStatus SunxiCedrusCreateSurfaces2(VADriverContextP context,
+	unsigned int format, unsigned int width, unsigned int height,
+	VASurfaceID *surfaces_ids, unsigned int surfaces_count,
+	VASurfaceAttrib *attributes, unsigned int attributes_count)
 {
 	struct sunxi_cedrus_driver_data *driver_data =
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
@@ -104,6 +108,12 @@ VAStatus SunxiCedrusCreateSurfaces(VADriverContextP context, int width,
 	}
 
 	return VA_STATUS_SUCCESS;
+}
+
+VAStatus SunxiCedrusCreateSurfaces(VADriverContextP context, int width,
+	int height, int format, int surfaces_count, VASurfaceID *surfaces_ids)
+{
+	return SunxiCedrusCreateSurfaces2(context, format, width, height, surfaces_ids, surfaces_count, NULL, 0);
 }
 
 VAStatus SunxiCedrusDestroySurfaces(VADriverContextP context,
@@ -239,11 +249,67 @@ VAStatus SunxiCedrusLockSurface(VADriverContextP context,
 	unsigned int *luma_offset, unsigned int *chroma_u_offset,
 	unsigned int *chroma_v_offset, unsigned int *buffer_name, void **buffer)
 {
+	sunxi_cedrus_log("%s()\n", __func__);
+
 	return VA_STATUS_ERROR_UNIMPLEMENTED;
 }
 
 VAStatus SunxiCedrusUnlockSurface(VADriverContextP context,
 	VASurfaceID surface_id)
 {
+	sunxi_cedrus_log("%s()\n", __func__);
+
 	return VA_STATUS_ERROR_UNIMPLEMENTED;
+}
+
+VAStatus SunxiCedrusExportSurfaceHandle(VADriverContextP context,
+	VASurfaceID surface_id, uint32_t mem_type, uint32_t flags,
+	void *descriptor)
+{
+	struct sunxi_cedrus_driver_data *driver_data =
+		(struct sunxi_cedrus_driver_data *) context->pDriverData;
+	VADRMPRIMESurfaceDescriptor *surface_descriptor =
+		(VADRMPRIMESurfaceDescriptor *) descriptor;
+	struct object_surface *surface_object;
+	unsigned int planes_count = 2;
+	int export_fds[planes_count];
+	unsigned int i;
+	int rc;
+
+	if (mem_type != VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2)
+		return VA_STATUS_ERROR_UNSUPPORTED_MEMORY_TYPE;
+
+	surface_object = SURFACE(surface_id);
+	if (surface_object == NULL)
+		return VA_STATUS_ERROR_INVALID_SURFACE;
+
+	sunxi_cedrus_log("%s()\n", __func__);
+
+	// FIXME: O_RDONLY, flag from flags but meh
+	rc = v4l2_export_buffer(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, surface_object->destination_index, O_RDONLY, &export_fds, planes_count);
+	if (rc < 0)
+		return VA_STATUS_ERROR_OPERATION_FAILED;
+
+	surface_descriptor->fourcc = VA_FOURCC_NV12;
+	surface_descriptor->width = surface_object->width;
+	surface_descriptor->height = surface_object->height;
+	surface_descriptor->num_objects = planes_count;
+
+	for (i = 0; i < planes_count; i++) {
+		surface_descriptor->objects[i].drm_format_modifier = DRM_FORMAT_MOD_NONE;
+		surface_descriptor->objects[i].fd = export_fds[i];
+		surface_descriptor->objects[i].size = surface_object->destination_size[i];
+	}
+
+	surface_descriptor->num_layers = planes_count;
+
+	for (i = 0; i < planes_count; i++) {
+		surface_descriptor->layers[i].drm_format = DRM_FORMAT_NV12;
+		surface_descriptor->layers[i].num_planes = 1;
+		surface_descriptor->layers[i].object_index[0] = i;
+		surface_descriptor->layers[i].offset[0] = 0;
+		surface_descriptor->layers[i].pitch[0] = surface_object->width; // FIXME? Kodi does not care...
+	}
+
+	return VA_STATUS_SUCCESS;
 }
