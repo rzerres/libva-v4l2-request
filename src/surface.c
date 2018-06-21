@@ -168,7 +168,10 @@ VAStatus SunxiCedrusQuerySurfaceAttributes(VADriverContextP context,
 	i++;
 
 	attributes_list_size = i * sizeof(*attributes);
-	memcpy(attributes, attributes_list, attributes_list_size);
+
+	if (attributes != NULL)
+		memcpy(attributes, attributes_list, attributes_list_size);
+
 	free(attributes_list);
 
 	*attributes_count = i;
