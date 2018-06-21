@@ -61,6 +61,8 @@ VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 	unsigned int i;
 	int rc;
 
+	sunxi_cedrus_log("%s()\n", __func__);
+
 	config_object = CONFIG(config_id);
 	if (config_object == NULL) {
 		status = VA_STATUS_ERROR_INVALID_CONFIG;
@@ -101,6 +103,8 @@ VAStatus SunxiCedrusCreateContext(VADriverContextP context,
 		status = VA_STATUS_ERROR_ALLOCATION_FAILED;
 		goto error;
 	}
+
+	sunxi_cedrus_log("%s() go grab %d surfaces\n", __func__, surfaces_count);
 
 	for (i = 0; i < surfaces_count; i++) {
 		surface_object = SURFACE(surfaces_ids[i]);
@@ -177,6 +181,8 @@ VAStatus SunxiCedrusDestroyContext(VADriverContextP context,
 		(struct sunxi_cedrus_driver_data *) context->pDriverData;
 	struct object_context *context_object;
 	int rc;
+
+	sunxi_cedrus_log("%s()\n", __func__);
 
 	context_object = CONTEXT(context_id);
 	if (context_object == NULL)

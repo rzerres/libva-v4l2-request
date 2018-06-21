@@ -58,6 +58,8 @@ VAStatus SunxiCedrusCreateSurfaces2(VADriverContextP context,
 	unsigned int i, j;
 	int rc;
 
+	sunxi_cedrus_log("%s()\n", __func__);
+
 	if (format != VA_RT_FORMAT_YUV420)
 		return VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT;
 
@@ -69,11 +71,15 @@ VAStatus SunxiCedrusCreateSurfaces2(VADriverContextP context,
 	if (rc < 0)
 		return VA_STATUS_ERROR_ALLOCATION_FAILED;
 
+	sunxi_cedrus_log("%s() go loop with %d\n", __func__, surfaces_count);
+
 	for (i = 0; i < surfaces_count; i++) {
 		id = object_heap_allocate(&driver_data->surface_heap);
 		surface_object = SURFACE(id);
 		if (surface_object == NULL)
 			return VA_STATUS_ERROR_ALLOCATION_FAILED;
+
+			sunxi_cedrus_log("%s() requesting buffer %d\n", __func__, i);
 
 		rc = v4l2_request_buffer(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, i, length, offset);
 		if (rc < 0)
@@ -86,6 +92,8 @@ VAStatus SunxiCedrusCreateSurfaces2(VADriverContextP context,
 		destination_data[1] = mmap(NULL, length[1], PROT_READ | PROT_WRITE, MAP_SHARED, driver_data->video_fd, offset[1]);
 		if (destination_data[1] == MAP_FAILED)
 			return VA_STATUS_ERROR_ALLOCATION_FAILED;
+
+		sunxi_cedrus_log("%s() requested buffer %d\n", __func__, i);
 
 		surface_object->status = VASurfaceReady;
 		surface_object->width = width;
@@ -113,6 +121,8 @@ VAStatus SunxiCedrusCreateSurfaces2(VADriverContextP context,
 VAStatus SunxiCedrusCreateSurfaces(VADriverContextP context, int width,
 	int height, int format, int surfaces_count, VASurfaceID *surfaces_ids)
 {
+	sunxi_cedrus_log("%s()\n", __func__);
+
 	return SunxiCedrusCreateSurfaces2(context, format, width, height, surfaces_ids, surfaces_count, NULL, 0);
 }
 
@@ -125,6 +135,8 @@ VAStatus SunxiCedrusQuerySurfaceAttributes(VADriverContextP context,
 	VASurfaceAttrib *attributes_list;
 	unsigned int attributes_list_size = SUNXI_CEDRUS_MAX_CONFIG_ATTRIBUTES * sizeof(*attributes);
 	unsigned int i = 0;
+
+	sunxi_cedrus_log("%s()\n", __func__);
 
 	attributes_list = malloc(attributes_list_size);
 	memset(attributes_list, 0, attributes_list_size);
@@ -187,6 +199,8 @@ VAStatus SunxiCedrusDestroySurfaces(VADriverContextP context,
 	struct object_surface *surface_object;
 	unsigned int i, j;
 
+	sunxi_cedrus_log("%s()\n", __func__);
+
 	for (i = 0; i < surfaces_count; i++) {
 		surface_object = SURFACE(surfaces_ids[i]);
 		if (surface_object == NULL)
@@ -217,6 +231,8 @@ VAStatus SunxiCedrusSyncSurface(VADriverContextP context,
 	VAStatus status;
 	int request_fd = -1;
 	int rc;
+
+	sunxi_cedrus_log("%s()\n", __func__);
 
 	surface_object = SURFACE(surface_id);
 	if (surface_object == NULL) {
