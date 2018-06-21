@@ -90,6 +90,7 @@ VAStatus VA_DRIVER_INIT_FUNC(VADriverContextP context)
 	vtable->vaCreateSurfaces = SunxiCedrusCreateSurfaces;
 	vtable->vaCreateSurfaces2 = SunxiCedrusCreateSurfaces2;
 	vtable->vaDestroySurfaces = SunxiCedrusDestroySurfaces;
+	vtable->vaQuerySurfaceAttributes = SunxiCedrusQuerySurfaceAttributes;
 	vtable->vaCreateContext = SunxiCedrusCreateContext;
 	vtable->vaDestroyContext = SunxiCedrusDestroyContext;
 	vtable->vaCreateBuffer = SunxiCedrusCreateBuffer;

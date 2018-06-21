@@ -60,6 +60,9 @@ VAStatus SunxiCedrusCreateSurfaces2(VADriverContextP context,
 	VASurfaceAttrib *attributes, unsigned int attributes_count);
 VAStatus SunxiCedrusCreateSurfaces(VADriverContextP context, int width,
 	int height, int format, int surfaces_count, VASurfaceID *surfaces_ids);
+VAStatus SunxiCedrusQuerySurfaceAttributes(VADriverContextP context,
+	VAConfigID config, VASurfaceAttrib *attributes,
+	unsigned int *attributes_count);
 VAStatus SunxiCedrusDestroySurfaces(VADriverContextP context,
 	VASurfaceID *surfaces_ids, int surfaces_count);
 VAStatus SunxiCedrusSyncSurface(VADriverContextP context,

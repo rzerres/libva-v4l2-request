@@ -116,6 +116,66 @@ VAStatus SunxiCedrusCreateSurfaces(VADriverContextP context, int width,
 	return SunxiCedrusCreateSurfaces2(context, format, width, height, surfaces_ids, surfaces_count, NULL, 0);
 }
 
+VAStatus SunxiCedrusQuerySurfaceAttributes(VADriverContextP context,
+	VAConfigID config, VASurfaceAttrib *attributes,
+	unsigned int *attributes_count)
+{
+	struct sunxi_cedrus_driver_data *driver_data =
+		(struct sunxi_cedrus_driver_data *) context->pDriverData;
+	VASurfaceAttrib *attributes_list;
+	unsigned int attributes_list_size = SUNXI_CEDRUS_MAX_CONFIG_ATTRIBUTES * sizeof(*attributes);
+	unsigned int i = 0;
+
+	attributes_list = malloc(attributes_list_size);
+	memset(attributes_list, 0, attributes_list_size);
+
+	attributes_list[i].type = VASurfaceAttribPixelFormat;
+	attributes_list[i].flags = VA_SURFACE_ATTRIB_GETTABLE;
+	attributes_list[i].value.type = VAGenericValueTypeInteger;
+	attributes_list[i].value.value.i = VA_FOURCC_NV12;
+	i++;
+
+	attributes_list[i].type = VASurfaceAttribMinWidth;
+	attributes_list[i].flags = VA_SURFACE_ATTRIB_GETTABLE;
+	attributes_list[i].value.type = VAGenericValueTypeInteger;
+	attributes_list[i].value.value.i = 32;
+	i++;
+
+	attributes_list[i].type = VASurfaceAttribMaxWidth;
+	attributes_list[i].flags = VA_SURFACE_ATTRIB_GETTABLE;
+	attributes_list[i].value.type = VAGenericValueTypeInteger;
+	attributes_list[i].value.value.i = 2048;
+	i++;
+
+	attributes_list[i].type = VASurfaceAttribMinHeight;
+	attributes_list[i].flags = VA_SURFACE_ATTRIB_GETTABLE;
+	attributes_list[i].value.type = VAGenericValueTypeInteger;
+	attributes_list[i].value.value.i = 32;
+	i++;
+
+	attributes_list[i].type = VASurfaceAttribMaxHeight;
+	attributes_list[i].flags = VA_SURFACE_ATTRIB_GETTABLE;
+	attributes_list[i].value.type = VAGenericValueTypeInteger;
+	attributes_list[i].value.value.i = 2048;
+	i++;
+
+	attributes_list[i].type = VASurfaceAttribMemoryType;
+	attributes_list[i].flags = VA_SURFACE_ATTRIB_GETTABLE;
+	attributes_list[i].value.type = VAGenericValueTypeInteger;
+	attributes_list[i].value.value.i = VA_SURFACE_ATTRIB_MEM_TYPE_VA |
+		VA_SURFACE_ATTRIB_MEM_TYPE_KERNEL_DRM |
+		VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME;
+	i++;
+
+	attributes_list_size = i * sizeof(*attributes);
+	memcpy(attributes, attributes_list, attributes_list_size);
+	free(attributes);
+
+	*attributes_count = i;
+
+	return VA_STATUS_SUCCESS;
+}
+
 VAStatus SunxiCedrusDestroySurfaces(VADriverContextP context,
 	VASurfaceID *surfaces_ids, int surfaces_count)
 {
