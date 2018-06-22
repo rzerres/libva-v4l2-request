@@ -53,6 +53,8 @@ VAStatus SunxiCedrusBeginPicture(VADriverContextP context,
 	struct object_context *context_object;
 	struct object_surface *surface_object;
 
+	sunxi_cedrus_log("%s()\n", __func__);
+
 	context_object = CONTEXT(context_id);
 	if (context_object == NULL)
 		return VA_STATUS_ERROR_INVALID_CONTEXT;
@@ -84,6 +86,8 @@ VAStatus SunxiCedrusRenderPicture(VADriverContextP context,
 	unsigned int size;
 	int rc;
 	int i;
+
+	sunxi_cedrus_log("%s()\n", __func__);
 
 	context_object = CONTEXT(context_id);
 	if (context_object == NULL)
@@ -143,6 +147,8 @@ VAStatus SunxiCedrusEndPicture(VADriverContextP context,
 	int request_fd;
 	VAStatus status;
 	int rc;
+
+	sunxi_cedrus_log("%s()\n", __func__);
 
 	context_object = CONTEXT(context_id);
 	if (context_object == NULL)

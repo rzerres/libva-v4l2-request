@@ -236,11 +236,13 @@ VAStatus SunxiCedrusSyncSurface(VADriverContextP context,
 
 	surface_object = SURFACE(surface_id);
 	if (surface_object == NULL) {
+			sunxi_cedrus_log("%s() ivalid surface %d\n", __func__, surface_id);
 		status = VA_STATUS_ERROR_INVALID_SURFACE;
 		goto error;
 	}
 
 	if (surface_object->status != VASurfaceRendering) {
+			sunxi_cedrus_log("%s() m'kay we are good\n", __func__);
 		status = VA_STATUS_SUCCESS;
 		goto complete;
 	}
