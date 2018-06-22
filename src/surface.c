@@ -37,7 +37,7 @@
 #include <sys/ioctl.h>
 
 #include <linux/videodev2.h>
-#include <drm_fourcc.h>
+#include <drm/drm_fourcc.h>
 
 #include "v4l2.h"
 #include "media.h"
@@ -379,19 +379,20 @@ VAStatus SunxiCedrusExportSurfaceHandle(VADriverContextP context,
 	surface_descriptor->num_objects = planes_count;
 
 	for (i = 0; i < planes_count; i++) {
-		surface_descriptor->objects[i].drm_format_modifier = DRM_FORMAT_MOD_NONE;
+		surface_descriptor->objects[i].drm_format_modifier = DRM_FORMAT_MOD_ALLWINNER_MB32_TILED;
 		surface_descriptor->objects[i].fd = export_fds[i];
 		surface_descriptor->objects[i].size = surface_object->destination_size[i];
 	}
 
-	surface_descriptor->num_layers = planes_count;
+	surface_descriptor->num_layers = 1;
+
+	surface_descriptor->layers[0].drm_format = DRM_FORMAT_NV12;
+	surface_descriptor->layers[0].num_planes = planes_count;
 
 	for (i = 0; i < planes_count; i++) {
-		surface_descriptor->layers[i].drm_format = DRM_FORMAT_NV12;
-		surface_descriptor->layers[i].num_planes = 1;
-		surface_descriptor->layers[i].object_index[0] = i;
-		surface_descriptor->layers[i].offset[0] = 0;
-		surface_descriptor->layers[i].pitch[0] = surface_object->width; // FIXME? Kodi does not care...
+		surface_descriptor->layers[0].object_index[i] = i;
+		surface_descriptor->layers[0].offset[i] = 0;
+		surface_descriptor->layers[0].pitch[i] = (surface_object->width + 31) & (~31);
 	}
 
 	return VA_STATUS_SUCCESS;
