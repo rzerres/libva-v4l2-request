@@ -357,6 +357,8 @@ VAStatus SunxiCedrusExportSurfaceHandle(VADriverContextP context,
 	unsigned int i;
 	int rc;
 
+	sunxi_cedrus_log("%s()\n", __func__);
+
 	if (mem_type != VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2)
 		return VA_STATUS_ERROR_UNSUPPORTED_MEMORY_TYPE;
 
@@ -364,7 +366,7 @@ VAStatus SunxiCedrusExportSurfaceHandle(VADriverContextP context,
 	if (surface_object == NULL)
 		return VA_STATUS_ERROR_INVALID_SURFACE;
 
-	sunxi_cedrus_log("%s()\n", __func__);
+	sunxi_cedrus_log("%s() go\n", __func__);
 
 	// FIXME: O_RDONLY, flag from flags but meh
 	rc = v4l2_export_buffer(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, surface_object->destination_index, O_RDONLY, &export_fds, planes_count);
