@@ -209,6 +209,9 @@ int v4l2_dequeue_buffer(int video_fd, int request_fd, unsigned int type,
 		cprint("Unable to dequeue buffer: %s\n", strerror(errno));
 		return -1;
 	}
+	cprint("%s buffer dequeued, timestamp %ld.%ld\n",
+	       (type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) ? "Capture" : "Output",
+	       buffer.timestamp.tv_sec, buffer.timestamp.tv_sec); 
 
 	return 0;
 }

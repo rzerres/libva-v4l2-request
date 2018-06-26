@@ -56,19 +56,26 @@ static int h264_lookup_ref_pic(VAPictureParameterBufferH264 *VAPicture,
 	return 0;
 }
 
-static void h264_va_picture_to_v4l2(VAPictureParameterBufferH264 *VAPicture,
+static void h264_va_picture_to_v4l2(struct sunxi_cedrus_driver_data *driver,
+				    VAPictureParameterBufferH264 *VAPicture,
 				    struct v4l2_ctrl_h264_decode_param *decode,
 				    struct v4l2_ctrl_h264_pps *pps,
 				    struct v4l2_ctrl_h264_sps *sps)
 {
 	int i;
 
+	decode->num_slices = VAPicture->num_ref_frames;
 	decode->top_field_order_cnt = VAPicture->CurrPic.TopFieldOrderCnt;
 	decode->bottom_field_order_cnt = VAPicture->CurrPic.BottomFieldOrderCnt;
 
 	for (i = 0; i < VAPicture->num_ref_frames; i++) {
 		struct v4l2_h264_dpb_entry *dpb = &decode->dpb[i];
 		VAPictureH264 *pic = &VAPicture->ReferenceFrames[i];
+		struct object_surface *surface = SURFACE(driver,
+							 pic->picture_id);
+
+		if (surface)
+			dpb->buf_index = surface->destination_index;
 
 		dpb->frame_num = pic->frame_idx;
 		dpb->top_field_order_cnt = pic->TopFieldOrderCnt;
@@ -138,7 +145,8 @@ static void h264_va_picture_to_v4l2(VAPictureParameterBufferH264 *VAPicture,
 		sps->flags |= V4L2_H264_SPS_FLAG_DELTA_PIC_ORDER_ALWAYS_ZERO;
 }
 
-static void h264_va_matrix_to_v4l2(VAIQMatrixBufferH264 *VAMatrix,
+static void h264_va_matrix_to_v4l2(struct sunxi_cedrus_driver_data *driver,
+				   VAIQMatrixBufferH264 *VAMatrix,
 				   struct v4l2_ctrl_h264_scaling_matrix *v4l2_matrix)
 {
 	memcpy(v4l2_matrix->scaling_list_4x4, &VAMatrix->ScalingList4x4,
@@ -155,7 +163,8 @@ static void h264_va_matrix_to_v4l2(VAIQMatrixBufferH264 *VAMatrix,
 	       sizeof(v4l2_matrix->scaling_list_8x8[3]));
 }
 
-static void h264_va_slice_to_v4l2(VASliceParameterBufferH264 *VASlice,
+static void h264_va_slice_to_v4l2(struct sunxi_cedrus_driver_data *driver,
+				  VASliceParameterBufferH264 *VASlice,
 				  VAPictureParameterBufferH264 *VAPicture,
 				  struct v4l2_ctrl_h264_slice_param *slice)
 {
@@ -233,10 +242,10 @@ int h264_fill_controls(struct sunxi_cedrus_driver_data *driver,
 	struct v4l2_ctrl_h264_sps sps = { 0 };
 	int rc;
 
-	h264_va_picture_to_v4l2(&surface->params.h264.picture,
+	h264_va_picture_to_v4l2(driver, &surface->params.h264.picture,
 				&decode, &pps, &sps);
-	h264_va_matrix_to_v4l2(&surface->params.h264.matrix, &matrix);
-	h264_va_slice_to_v4l2(&surface->params.h264.slice,
+	h264_va_matrix_to_v4l2(driver, &surface->params.h264.matrix, &matrix);
+	h264_va_slice_to_v4l2(driver, &surface->params.h264.slice,
 			      &surface->params.h264.picture, &slice);
 
 	rc = v4l2_set_control(driver->video_fd, surface->request_fd,

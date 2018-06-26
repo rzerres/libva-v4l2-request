@@ -106,8 +106,8 @@ static VAStatus SunxiCedrusQueueBuffer(struct object_config *config,
 		 * and have to copy from a regular buffer.
 		 */
 		memcpy(surface->source_data + surface->slices_size,
-		       buffer->data, buffer->count);
-		surface->slices_size += buffer->count;
+		       buffer->data, buffer->size * buffer->count);
+		surface->slices_size += buffer->size * buffer->count;
 		break;
 
 	case VAPictureParameterBufferType:
@@ -128,7 +128,7 @@ static VAStatus SunxiCedrusQueueBuffer(struct object_config *config,
 			break;
 
 		default:
-			return VA_STATUS_ERROR_OPERATION_FAILED;
+			break;
 		}
 		break;
 
@@ -144,7 +144,7 @@ static VAStatus SunxiCedrusQueueBuffer(struct object_config *config,
 			break;
 
 		default:
-			return VA_STATUS_ERROR_OPERATION_FAILED;
+			break;
 		}
 		break;
 
@@ -160,12 +160,12 @@ static VAStatus SunxiCedrusQueueBuffer(struct object_config *config,
 			break;
 
 		default:
-			return VA_STATUS_ERROR_OPERATION_FAILED;
+			break;
 		}
 		break;
 
 	default:
-		return VA_STATUS_ERROR_OPERATION_FAILED;
+		break;
 	}
 
 	return VA_STATUS_SUCCESS;
