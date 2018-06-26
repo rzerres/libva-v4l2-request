@@ -63,7 +63,7 @@ VAStatus SunxiCedrusCreateSurfaces2(VADriverContextP context,
 	if (format != VA_RT_FORMAT_YUV420)
 		return VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT;
 
-	rc = v4l2_set_format(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, V4L2_PIX_FMT_MB32_NV12, width, height);
+	rc = v4l2_set_format(driver_data->video_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, V4L2_PIX_FMT_NV12, width, height);
 	if (rc < 0)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 
@@ -379,7 +379,7 @@ VAStatus SunxiCedrusExportSurfaceHandle(VADriverContextP context,
 	surface_descriptor->num_objects = planes_count;
 
 	for (i = 0; i < planes_count; i++) {
-		surface_descriptor->objects[i].drm_format_modifier = DRM_FORMAT_MOD_ALLWINNER_MB32_TILED;
+		surface_descriptor->objects[i].drm_format_modifier = 0;
 		surface_descriptor->objects[i].fd = export_fds[i];
 		surface_descriptor->objects[i].size = surface_object->destination_size[i];
 	}
