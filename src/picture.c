@@ -80,7 +80,7 @@ static VAStatus codec_store_buffer(struct sunxi_cedrus_driver_data *driver_data,
 		break;
 
 	case VASliceParameterBufferType:
-		switch (config->profile) {
+		switch (profile) {
 		case VAProfileH264Main:
 		case VAProfileH264High:
 		case VAProfileH264ConstrainedBaseline:
@@ -95,7 +95,7 @@ static VAStatus codec_store_buffer(struct sunxi_cedrus_driver_data *driver_data,
 		break;
 
 	case VAIQMatrixBufferType:
-		switch (config->profile) {
+		switch (profile) {
 		case VAProfileH264Main:
 		case VAProfileH264High:
 		case VAProfileH264ConstrainedBaseline:
