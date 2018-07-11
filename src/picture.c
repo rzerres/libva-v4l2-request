@@ -51,15 +51,26 @@ static VAStatus codec_store_buffer(struct sunxi_cedrus_driver_data *driver_data,
 {
 	int rc;
 
-	switch (profile) {
-	case VAProfileMPEG2Simple:
-	case VAProfileMPEG2Main:
-		if (buffer_object->type == VASliceDataBufferType) {
-			rc = mpeg2_fill_slice_data(driver_data, surface_object, buffer_object);
-			if (rc < 0)
-				return VA_STATUS_ERROR_OPERATION_FAILED;
-		} else if (buffer_object->type == VAPictureParameterBufferType) {
+	switch (buffer_object->type) {
+	case VASliceDataBufferType:
+		/*
+		 * Since there is no guarantee that the allocation
+		 * order is the same as the submission order (via
+		 * RenderPicture), we can't use a V4L2 buffer directly
+		 * and have to copy from a regular buffer.
+		 */
+		memcpy(surface_object->source_data + surface_object->slices_size, buffer_object->data, buffer_object->size * buffer_object->count);
+		surface_object->slices_size += buffer_object->size * buffer_object->count;
+		break;
+
+	case VAPictureParameterBufferType:
+		switch (profile) {
+		case VAProfileMPEG2Simple:
+		case VAProfileMPEG2Main:
 			memcpy(&surface_object->params.mpeg2.picture, buffer_object->data, sizeof(surface_object->params.mpeg2.picture));
+			break;
+		default:
+			break;
 		}
 		break;
 

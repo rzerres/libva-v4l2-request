@@ -86,25 +86,3 @@ int mpeg2_set_controls(struct sunxi_cedrus_driver_data *driver_data,
 
 	return 0;
 }
-
-int mpeg2_fill_slice_data(struct sunxi_cedrus_driver_data *driver_data,
-	struct object_surface *surface_object,
-	struct object_buffer *buffer_object)
-{
-	unsigned char *p = (unsigned char *) surface_object->source_data +
-		surface_object->slices_size;
-
-	if (buffer_object->type != VASliceDataBufferType)
-		return -1;
-
-	/*
-	 * Since there is no guarantee that the allocation order is the same as
-	 * the submission order (via RenderPicture), we can't use a V4L2 buffer
-	 * directly and have to copy from a regular buffer.
-	 */
-
-	memcpy(p, buffer_object->data, buffer_object->size);
-	surface_object->slices_size += buffer_object->size;
-
-	return 0;
-}

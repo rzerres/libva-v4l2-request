@@ -35,8 +35,5 @@
 
 int mpeg2_set_controls(struct sunxi_cedrus_driver_data *driver_data,
 	struct object_surface *surface_object);
-int mpeg2_fill_slice_data(struct sunxi_cedrus_driver_data *driver_data,
-	struct object_surface *surface_object,
-	struct object_buffer *buffer_object);
 
 #endif
