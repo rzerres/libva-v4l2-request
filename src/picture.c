@@ -72,7 +72,7 @@ static VAStatus codec_store_buffer(struct sunxi_cedrus_driver_data *driver_data,
 		case VAProfileH264ConstrainedBaseline:
 		case VAProfileH264MultiviewHigh:
 		case VAProfileH264StereoHigh:
-			memcpy(&surface->params.h264.picture, buffer->data, sizeof(surface->params.h264.picture));
+			memcpy(&surface_object->params.h264.picture, buffer_object->data, sizeof(surface_object->params.h264.picture));
 			break;
 		default:
 			break;
