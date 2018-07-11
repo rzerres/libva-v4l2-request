@@ -241,10 +241,10 @@ int h264_set_controls(struct sunxi_cedrus_driver_data *driver_data,
 	struct v4l2_ctrl_h264_sps sps = { 0 };
 	int rc;
 
-	h264_va_picture_to_v4l2(driver, &surface_object->params.h264.picture,
+	h264_va_picture_to_v4l2(driver_data, &surface_object->params.h264.picture,
 				&decode, &pps, &sps);
-	h264_va_matrix_to_v4l2(driver, &surface_object->params.h264.matrix, &matrix);
-	h264_va_slice_to_v4l2(driver, &surface_object->params.h264.slice,
+	h264_va_matrix_to_v4l2(driver_data, &surface_object->params.h264.matrix, &matrix);
+	h264_va_slice_to_v4l2(driver_data, &surface_object->params.h264.slice,
 			      &surface_object->params.h264.picture, &slice);
 
 	rc = v4l2_set_control(driver_data->video_fd, surface_object->request_fd,
