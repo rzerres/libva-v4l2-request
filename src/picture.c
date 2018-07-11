@@ -129,6 +129,16 @@ static VAStatus codec_set_controls(struct sunxi_cedrus_driver_data *driver_data,
 			return VA_STATUS_ERROR_OPERATION_FAILED;
 		break;
 
+	case VAProfileH264Main:
+	case VAProfileH264High:
+	case VAProfileH264ConstrainedBaseline:
+	case VAProfileH264MultiviewHigh:
+	case VAProfileH264StereoHigh:
+		rc = h264_set_controls(driver_data, surface_object);
+		if (rc < 0)
+			return VA_STATUS_ERROR_OPERATION_FAILED;
+		break;
+
 	default:
 		return VA_STATUS_ERROR_UNSUPPORTED_PROFILE;
 	}
