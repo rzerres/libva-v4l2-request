@@ -49,8 +49,6 @@ static VAStatus codec_store_buffer(struct sunxi_cedrus_driver_data *driver_data,
 	VAProfile profile, struct object_surface *surface_object,
 	struct object_buffer *buffer_object)
 {
-	int rc;
-
 	switch (buffer_object->type) {
 	case VASliceDataBufferType:
 		/*
