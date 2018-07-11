@@ -56,7 +56,7 @@ static int h264_lookup_ref_pic(VAPictureParameterBufferH264 *VAPicture,
 	return 0;
 }
 
-static void h264_va_picture_to_v4l2(struct sunxi_cedrus_driver_data *driver,
+static void h264_va_picture_to_v4l2(struct sunxi_cedrus_driver_data *driver_data,
 	VAPictureParameterBufferH264 *VAPicture,
 	struct v4l2_ctrl_h264_decode_param *decode,
 	struct v4l2_ctrl_h264_pps *pps,
@@ -144,7 +144,7 @@ static void h264_va_picture_to_v4l2(struct sunxi_cedrus_driver_data *driver,
 		sps->flags |= V4L2_H264_SPS_FLAG_DELTA_PIC_ORDER_ALWAYS_ZERO;
 }
 
-static void h264_va_matrix_to_v4l2(struct sunxi_cedrus_driver_data *driver,
+static void h264_va_matrix_to_v4l2(struct sunxi_cedrus_driver_data *driver_data,
 	VAIQMatrixBufferH264 *VAMatrix,
 	struct v4l2_ctrl_h264_scaling_matrix *v4l2_matrix)
 {
@@ -162,7 +162,7 @@ static void h264_va_matrix_to_v4l2(struct sunxi_cedrus_driver_data *driver,
 	       sizeof(v4l2_matrix->scaling_list_8x8[3]));
 }
 
-static void h264_va_slice_to_v4l2(struct sunxi_cedrus_driver_data *driver,
+static void h264_va_slice_to_v4l2(struct sunxi_cedrus_driver_data *driver_data,
 	VASliceParameterBufferH264 *VASlice,
 	VAPictureParameterBufferH264 *VAPicture,
 	struct v4l2_ctrl_h264_slice_param *slice)
@@ -231,7 +231,7 @@ static void h264_va_slice_to_v4l2(struct sunxi_cedrus_driver_data *driver,
 	       sizeof(factors->luma_offset));
 }
 
-int h264_set_controls(struct sunxi_cedrus_driver_data *driver,
+int h264_set_controls(struct sunxi_cedrus_driver_data *driver_data,
 	struct object_surface *surface_object)
 {
 	struct v4l2_ctrl_h264_scaling_matrix matrix = { 0 };
@@ -247,31 +247,31 @@ int h264_set_controls(struct sunxi_cedrus_driver_data *driver,
 	h264_va_slice_to_v4l2(driver, &surface_object->params.h264.slice,
 			      &surface_object->params.h264.picture, &slice);
 
-	rc = v4l2_set_control(driver->video_fd, surface_object->request_fd,
+	rc = v4l2_set_control(driver_data->video_fd, surface_object->request_fd,
 			      V4L2_CID_MPEG_VIDEO_H264_DECODE_PARAM,
 			      &decode, sizeof(decode));
 	if (rc < 0)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 
-	rc = v4l2_set_control(driver->video_fd, surface_object->request_fd,
+	rc = v4l2_set_control(driver_data->video_fd, surface_object->request_fd,
 			      V4L2_CID_MPEG_VIDEO_H264_SLICE_PARAM,
 			      &slice, sizeof(slice));
 	if (rc < 0)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 
-	rc = v4l2_set_control(driver->video_fd, surface_object->request_fd,
+	rc = v4l2_set_control(driver_data->video_fd, surface_object->request_fd,
 			      V4L2_CID_MPEG_VIDEO_H264_PPS,
 			      &pps, sizeof(pps));
 	if (rc < 0)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 
-	rc = v4l2_set_control(driver->video_fd, surface_object->request_fd,
+	rc = v4l2_set_control(driver_data->video_fd, surface_object->request_fd,
 			      V4L2_CID_MPEG_VIDEO_H264_SPS,
 			      &sps, sizeof(sps));
 	if (rc < 0)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 
-	rc = v4l2_set_control(driver->video_fd, surface_object->request_fd,
+	rc = v4l2_set_control(driver_data->video_fd, surface_object->request_fd,
 			      V4L2_CID_MPEG_VIDEO_H264_SCALING_MATRIX,
 			      &matrix, sizeof(matrix));
 	if (rc < 0)
