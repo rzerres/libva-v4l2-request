@@ -67,6 +67,43 @@ static VAStatus codec_store_buffer(struct sunxi_cedrus_driver_data *driver_data,
 		case VAProfileMPEG2Main:
 			memcpy(&surface_object->params.mpeg2.picture, buffer_object->data, sizeof(surface_object->params.mpeg2.picture));
 			break;
+		case VAProfileH264Main:
+		case VAProfileH264High:
+		case VAProfileH264ConstrainedBaseline:
+		case VAProfileH264MultiviewHigh:
+		case VAProfileH264StereoHigh:
+			memcpy(&surface->params.h264.picture, buffer->data, sizeof(surface->params.h264.picture));
+			break;
+		default:
+			break;
+		}
+		break;
+
+	case VASliceParameterBufferType:
+		switch (config->profile) {
+		case VAProfileH264Main:
+		case VAProfileH264High:
+		case VAProfileH264ConstrainedBaseline:
+		case VAProfileH264MultiviewHigh:
+		case VAProfileH264StereoHigh:
+			memcpy(&surface_object->params.h264.slice, buffer_object->data, sizeof(surface_object->params.h264.slice));
+			break;
+
+		default:
+			break;
+		}
+		break;
+
+	case VAIQMatrixBufferType:
+		switch (config->profile) {
+		case VAProfileH264Main:
+		case VAProfileH264High:
+		case VAProfileH264ConstrainedBaseline:
+		case VAProfileH264MultiviewHigh:
+		case VAProfileH264StereoHigh:
+			memcpy(&surface_object->params.h264.matrix, buffer_object->data,  sizeof(surface_object->params.h264.matrix));
+			break;
+
 		default:
 			break;
 		}
