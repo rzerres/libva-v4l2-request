@@ -306,6 +306,8 @@ static void h265_fill_slice_params(VAPictureParameterBufferHEVC *picture,
 		/* TODO: Interleaved: Get the POC for each field. */
 		slice_params->dpb[i].pic_order_cnt[0] =
 			hevc_picture->pic_order_cnt;
+
+		num_active_dpb_entries++;
 	}
 
 	slice_params->num_active_dpb_entries = num_active_dpb_entries;
