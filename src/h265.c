@@ -374,7 +374,6 @@ int h265_set_controls(struct request_data *driver_data,
 	struct v4l2_ctrl_hevc_pps pps;
 	struct v4l2_ctrl_hevc_sps sps;
 	struct v4l2_ctrl_hevc_slice_params slice_params;
-	struct v4l2_ctrl_hevc_quantization quantization;
 	int rc;
 
 	h265_fill_pps(picture, slice, &pps);
