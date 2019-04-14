@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2018 Paul Kocialkowski <paul.kocialkowski@bootlin.com>
+ * Copyright (C) 2019 Ralf Zerres <ralf.zerres@networkx.de>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the
@@ -25,9 +26,14 @@
 #ifndef _MEDIA_H_
 #define _MEDIA_H_
 
+#include <linux/media.h>
+
+struct driver;
+
 int media_request_alloc(int media_fd);
 int media_request_reinit(int request_fd);
 int media_request_queue(int request_fd);
 int media_request_wait_completion(int request_fd);
+int media_scan_topology(struct driver *driver, int id, const char *path);
 
 #endif
