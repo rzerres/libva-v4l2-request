@@ -22,8 +22,28 @@
 
 autoconf_data = configuration_data()
 autoconf_data.set('VA_DRIVER_INIT_FUNC', va_driver_init_func)
+autoconf_data.set('V4L2_REQUEST_DRIVER_VERSION', v4l2_request_vaapi_driver_version)
+autoconf_data.set('V4L2_REQUEST_DRIVER_MAJOR_VERSION', v4l2_request_vaapi_driver_major_version)
+autoconf_data.set('V4L2_REQUEST_DRIVER_MINOR_VERSION', v4l2_request_vaapi_driver_minor_version)
+autoconf_data.set('V4L2_REQUEST_DRIVER_MICRO_VERSION', v4l2_request_vaapi_driver_micro_version)
+autoconf_data.set('V4L2_REQUEST_DRIVER_PRE_VERSION', v4l2_request_vaapi_driver_pre_version)
+if WITH_WAYLAND
+	autoconf_data.set10('HAVE_VA_WAYLAND', 1)
+endif
 
-autoconf = configure_file(
+if git.found()
+	git_version = run_command(
+		git, '--git-dir',
+		join_paths(meson.source_root(), '.git'),
+		'describe', '--tags')
+	v4l2_request_driver_git_version = git_version.stdout().strip()
+else
+	v4l2_request_driver_git_version = v4l2_request_vaapi_driver_version
+endif
+autoconf_data.set('V4L2_REQUEST_DRIVER_GIT_VERSION', v4l2_request_driver_git_version)
+
+autoconf_file = configure_file(
+	input: 'mesonconfig.h.in',
 	output: 'autoconfig.h',
 	configuration: autoconf_data)
 
@@ -72,20 +92,41 @@ includes = [
 ]
 
 cflags = [
+	'-DVA_DRIVERS_PATH="' + driverdir + '"',
+	#'-DHAVE_CONFIG_H',
 	'-Wall',
 	'-fvisibility=hidden'
 ]
 
-deps = [
-	libva_dep,
-	libdrm_dep
+shared_sources = [
+	sources,
+	headers,
+	autoconf_file
 ]
 
-v4l2_request_drv_video = shared_module('v4l2_request_drv_video',
+shared_deps = [
+	libva_dep,
+	libdrm_dep,
+	libudev_dep
+]
+
+shared_sources = [
+	sources,
+	headers,
+	autoconf_file
+]
+
+libv4l2_request_drv_video = static_library('v4l2_request_drv_video',
+	c_args: cflags,
+	include_directories : includes,
+	sources: shared_sources,
+	dependencies: shared_deps)
+
+v4l2_request_drv_video = library('v4l2_request_drv_video',
 	name_prefix: '',
 	install: true,
-	install_dir: '/usr/lib/dri/',
+	install_dir: driverdir,
+	soversion: '1.0.0',
 	c_args: cflags,
-	sources: [ sources, headers, autoconf ],
-	include_directories: includes,
-	dependencies: deps)
+	link_whole: libv4l2_request_drv_video,
+	dependencies: shared_deps)
