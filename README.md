@@ -1,17 +1,42 @@
-# v4l2-request libVA Backend
+# v4l2-request vaapi backend
 
 ## About
 
-This libVA backend is designed to work with the Linux Video4Linux2
+This vaapi backend is designed to work with the Linux Video4Linux2
 Request API that is used by a number of video codecs drivers,
 including the Video Engine found in most Allwinner SoCs.
 
+## Overview
+
+The VA API itself is intended to provide an interface between a video
+decode/encode/processing application (client) and a hardware accelerator
+(server), to off-load video decode/encode/processing operations from the
+host to the hardware accelerator at various entry-points.
+
+The basic operation steps are:
+
+- Negotiate a mutually acceptable configuration with the server to lock
+  down profile, entrypoints, and other attributes that will not change on
+  a frame-by-frame basis.
+- Create a video decode, encode or processing context which represents a
+  "virtualized" hardware device
+- Get and fill the render buffers with the corresponding data (depending on
+  profiles and entrypoints)
+- Pass the render buffers to the server to handle the current frame
+
+Initialization & Configuration Management
+
+- Find out supported profiles
+- Find out entrypoints for a given profile
+- Find out configuration attributes for a given profile/entrypoint pair
+- Create a configuration for use by the application
+
 ## Status
 
-The v4l2-request libVA backend currently supports the following formats:
-* MPEG2 (Simple and Main profiles)
-* H264 (Baseline, Main and High profiles)
-* H265 (Main profile)
+The v4l2-request libVA backend currently supports the following formats / profiles:
+* MPEG2 (Simple and Main profiles) -> VAProfileMPEG2Simple, VAProfileMPEG2Main
+* H264 (Baseline, Main and High profiles) -> VAProfileH264Baseline, VAProfileH264Main, VAProfileH264High
+* H265 (Main profile) -> VAProfileHEVCMain
 
 ## Instructions
 
@@ -20,6 +45,11 @@ be specified through the `LIBVA_DRIVER_NAME` environment variable, as
 such:
 
 	export LIBVA_DRIVER_NAME=v4l2_request
+
+In order to get debug output, you may enable that via the environment
+varialbe `VA_V4L2_REQUEST_DEBUG` like that:
+
+	export VA_V4L2_REQUEST_DEBUG=1
 
 A media player that supports VAAPI (such as VLC) can then be used to decode a
 video in a supported format:
