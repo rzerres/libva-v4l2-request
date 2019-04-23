@@ -348,6 +348,44 @@ static bool v4l2_request_DriverInit(VADriverContextP context, struct driver *dri
 
 extern const struct v4l2_request_device_info *v4l2_request_GetDeviceInfo(int devid);
 
+bool v4l2_request_VendorString(struct v4l2_request_data *v4l2_request)
+{
+	int rc, len;
+
+	if (v4l2_request->va_vendor[0] != '\0')
+		return true;
+
+	len = 0;
+	rc = snprintf(v4l2_request->va_vendor, sizeof(v4l2_request->va_vendor),
+		       "%s %s driver - %s.%s.%s",
+		       V4L2_REQUEST_STR_DRIVER_VENDOR, V4L2_REQUEST_STR_DRIVER_NAME,
+		       V4L2_REQUEST_DRIVER_MAJOR_VERSION, V4L2_REQUEST_DRIVER_MINOR_VERSION,
+		       V4L2_REQUEST_DRIVER_MICRO_VERSION);
+	if (rc < 0 || rc >= sizeof(v4l2_request->va_vendor))
+		goto error;
+	len = rc;
+
+	if (V4L2_REQUEST_DRIVER_PRE_VERSION != NULL) {
+		rc = snprintf(&v4l2_request->va_vendor[len], sizeof(v4l2_request->va_vendor) - len,
+			      ".pre%s", V4L2_REQUEST_DRIVER_PRE_VERSION);
+		if (rc < 0 || rc >= (sizeof(v4l2_request->va_vendor) - len))
+			goto error;
+		len += rc;
+
+		rc = snprintf(&v4l2_request->va_vendor[len], sizeof(v4l2_request->va_vendor) - len,
+			      " (%s)g56", V4L2_REQUEST_DRIVER_GIT_VERSION);
+		if (rc < 0 || rc >= (sizeof(v4l2_request->va_vendor) - len))
+			goto error;
+		len += rc;
+	}
+	return true;
+
+error:
+	v4l2_request->va_vendor[0] = '\0';
+	v4l2_request_assert_rc(rc > 0 && len < sizeof(v4l2_request->va_vendor), false);
+	return false;
+}
+
 /* Set default visibility for the init function only. */
 VAStatus __attribute__((visibility("default")))
 VA_DRIVER_INIT_FUNC(VADriverContextP context);
