@@ -44,6 +44,8 @@
 #include "media.h"
 #include "utils.h"
 
+uint32_t g_intel_debug_option_flags = 0;
+
 int driver_add(struct driver *driver, struct decoder *decoder)
 {
 	int rc = -1;
@@ -92,7 +94,6 @@ int driver_extend(struct driver *driver)
 		 * extend driver->capacity to hold another 'struct decoder'
 		 * and resize the allocated memory accordingly
 		 */
-		request_log("driver_extend(): prepare new decoder entity '%i'\n", decoder_index);
 		new_decoder =  realloc(driver->decoder,
 					  sizeof(struct decoder) * new_capacity);
 		if (new_decoder == NULL)
@@ -182,30 +183,35 @@ void driver_print(VADriverContextP context, struct driver *driver, int id)
 		       id, driver->num_decoders);
 	}
 
-	struct decoder *decoder = driver_get(driver, id);
-	request_log(" decoder[%i]: %s (id: %i, media_path: %s, video_path: %s, capabilities: %ld)\n",
-		    id,
-		    decoder->name,
-		    decoder->id,
-		    decoder->media_path,
-		    decoder->video_path,
-		    decoder->capabilities);
+	struct decoder *decoder = driver_get(context, driver, id);
+	if (g_v4l2_request_debug_option_flags)
+		v4l2_request_log_info(context, " decoder[%i]: %s (id: %i, media_path: %s, video_path: %s, capabilities: %ld)\n",
+				      id,
+				      decoder->name,
+				      decoder->id,
+				      decoder->media_path,
+				      decoder->video_path,
+				      decoder->capabilities);
 }
 
 void driver_print_all(VADriverContextP context, struct driver *driver)
 {
-	request_log("Driver: num_decoders: %d, capacity: %d\n",
-		    driver->num_decoders,
-		    driver->capacity);
+	struct decoder *decoder;
+
+	if (g_v4l2_request_debug_option_flags)
+		v4l2_request_log_info(context, "Driver: num_decoders: %d, capacity: %d\n",
+				      driver->num_decoders,
+				      driver->capacity);
 	for (int i = 0; i < driver_get_num_decoders(driver); i++) {
-		struct decoder *decoder = driver_get(driver, i);
-		request_log("decoder[%i]: %s (id: %i, media_path: %s, video_path: %s, capabilities: %ld)\n",
-			    i,
-			    decoder->name,
-			    decoder->id,
-			    decoder->media_path,
-			    decoder->video_path,
-			    decoder->capabilities);
+		decoder = driver_get(context, driver, i);
+		if (g_v4l2_request_debug_option_flags)
+			v4l2_request_log_info(context, "decoder[%i]: %s (id: %i, media_path: %s, video_path: %s, capabilities: %ld)\n",
+					      i,
+					      decoder->name,
+					      decoder->id,
+					      decoder->media_path,
+					      decoder->video_path,
+					      decoder->capabilities);
 	}
 }
 
@@ -443,7 +449,8 @@ int udev_scan_subsystem(VADriverContextP context, struct driver *driver, char *s
 		if (strncmp(node_name, "media", 5) == 0) {
 			asprintf(&decoder->media_path, "%s", node_path);
 			udev_device_get_sysattr_value(dev, "model");
-			request_log("udev node: [%i]\n", i);
+			if (g_v4l2_request_debug_option_flags)
+				v4l2_request_log_info(context, "udev node: [%i]\n", i);
 
 			// update media_path in driver structure
 			driver_set(driver, y, decoder);
@@ -451,14 +458,16 @@ int udev_scan_subsystem(VADriverContextP context, struct driver *driver, char *s
 			/* use media topology to select capable video-decoders. */
 			rc = media_scan_topology(context, driver, y, node_path);
 			if (rc <= 0) {
-				request_log("model '%s' doesn't offer streaming via v4l2 video-decoder.\n",
-					udev_device_get_sysattr_value(dev, "model"));
+				if (g_v4l2_request_debug_option_flags)
+					v4l2_request_log_info(context, " model '%s' doesn't offer streaming via v4l2 video-decoder.\n",
+							      udev_device_get_sysattr_value(dev, "model"));
 				driver_delete(driver, y);
 				}
 			else if (rc == 1) {
-				request_log(" model '%s' offers streaming via v4l2 video-decoder.\n",
-					udev_device_get_sysattr_value(dev, "model"));
-				driver_print(driver, y++);
+				if (g_v4l2_request_debug_option_flags)
+					v4l2_request_log_info(context, " model '%s' offers streaming via v4l2 video-decoder.\n",
+							      udev_device_get_sysattr_value(dev, "model"));
+				driver_print(context, driver, y++);
 			}
 		}
 

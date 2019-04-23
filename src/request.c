@@ -78,6 +78,13 @@ static bool v4l2_request_DataInit(VADriverContextP context)
 	if (g_v4l2_request_debug_option_flags)
 		v4l2_request_log_info(context, "Debug settings: %x\n", g_v4l2_request_debug_option_flags);
 
+	// Debug settings
+	if ((env_str = getenv("VA_V4L2_REQUEST_DEBUG")))
+		g_v4l2_request_debug_option_flags = atoi(env_str);
+
+	if (g_v4l2_request_debug_option_flags)
+		v4l2_request_log_info(context, "Debug settings: %x\n", g_v4l2_request_debug_option_flags);
+
 
 	//v4l2_request_driver_get_revid(v4l2_request, &v4l2_request->revision);
 
@@ -326,12 +333,25 @@ static bool v4l2_request_DriverInit(VADriverContextP context, struct driver *dri
 	int rc;
 
 	/* create driver structure */
+	if (g_v4l2_request_debug_option_flags)
+		v4l2_request_log_info(context, "Initializing driver structure...\n");
+	driver_init(driver);
+
+	/* environment settings */
+	media_path = getenv("LIBVA_V4L2_REQUEST_MEDIA_PATH");
 
 	if (media_path == NULL) {
 		subsystem = "media";
+		if (g_v4l2_request_debug_option_flags)
+			v4l2_request_log_info(context, "Scanning for suitable v4l2 drivers (subsystem: %s)...\n",
+					      subsystem);
 		rc = udev_scan_subsystem(context, driver, subsystem);
 	}
 	else {
+		if (g_v4l2_request_debug_option_flags)
+			v4l2_request_log_info(context, "Probing v4l2 topology (media_path: %s)...\n",
+					      media_path);
+
 		// update media_path in driver structure
 		driver_set(driver, 0, decoder);
 		asprintf(&decoder->media_path, "%s", media_path);
@@ -342,6 +362,12 @@ static bool v4l2_request_DriverInit(VADriverContextP context, struct driver *dri
 				    media_path);
 			driver_delete(driver, 0);
 		}
+		/*
+		else if (rc == 1)
+			v4l2_request_log_info(context, "media_path '%s' offers streaming v4l2 video-decoder.\n",
+				    media_path);
+		*/
+	}
 
 	return rc;
 }

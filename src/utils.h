@@ -37,6 +37,18 @@
 
 #define DRIVER_LAST	-1
 
+#define VA_V4L2_REQUEST_DEBUG_OPTION_ASSERT    (1 << 0)
+
+#define v4l2_request_assert_rc(value, fail_rc) do {	\
+	if (!(value)) {                     \
+		if (g_v4l2_request_debug_option_flags & VA_V4L2_REQUEST_DEBUG_OPTION_ASSERT) \
+			assert(value);      \
+		return fail_rc;		    \
+	}                                   \
+  } while (0)
+
+extern uint32_t g_v4l2_request_debug_option_flags;
+
 /*
  * Structures
  */

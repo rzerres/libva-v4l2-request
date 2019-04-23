@@ -126,8 +126,9 @@ int media_scan_topology(VADriverContextP context, struct driver *driver, int id,
 	unsigned int capabilities_required;
 
 	decoder = driver->decoder[id];
-	request_log("Scan topology for media-device %s ...\n",
-		    path);
+	if (g_v4l2_request_debug_option_flags)
+		v4l2_request_log_info(context, "Scan topology for media-device %s ...\n",
+				      path);
 
 	media_fd = open(path, O_RDWR | O_NONBLOCK, 0);
 	if (media_fd < 0) {
@@ -143,12 +144,13 @@ int media_scan_topology(VADriverContextP context, struct driver *driver, int id,
 		return rc;
 	}
 
-	request_log(" driver: %s (model: %s, bus: %s, api-version: %d, driver-version: %d)\n",
-	       device->driver,
-	       device->model,
-	       device->bus_info,
-	       device->media_version,
-	       device->driver_version);
+	if (g_v4l2_request_debug_option_flags)
+		v4l2_request_log_info(context, " driver: %s (model: %s, bus: %s, api-version: %d, driver-version: %d)\n",
+				      device->driver,
+				      device->model,
+				      device->bus_info,
+				      device->media_version,
+				      device->driver_version);
 
 	/*
 	 * Initialize topology structure
@@ -164,12 +166,13 @@ int media_scan_topology(VADriverContextP context, struct driver *driver, int id,
 	}
 
 	topology_version = topology->topology_version;
-	request_log(" topology: version %lld (entries: %d, interfaces: %d, pads: %d, links: %d\n",
-	       topology->topology_version,
-	       topology->num_entities,
-	       topology->num_interfaces,
-	       topology->num_pads,
-	       topology->num_links);
+	if (g_v4l2_request_debug_option_flags)
+		v4l2_request_log_info(context, " topology: version %lld (entries: %d, interfaces: %d, pads: %d, links: %d\n",
+				      topology->topology_version,
+				      topology->num_entities,
+				      topology->num_interfaces,
+				      topology->num_pads,
+				      topology->num_links);
 
 	/*
 	 * Update topology structures
@@ -197,9 +200,10 @@ int media_scan_topology(VADriverContextP context, struct driver *driver, int id,
 		rc = ioctl(media_fd, MEDIA_IOC_G_TOPOLOGY, topology);
 		if (rc < 0) {
 			if (topology->topology_version != topology_version) {
-				request_log(" Topology changed from version %lld to %lld. Trying again.\n",
-					topology_version,
-					topology->topology_version);
+				if (g_v4l2_request_debug_option_flags)
+					v4l2_request_log_info(context, " Topology changed from version %lld to %lld. Trying again.\n",
+							      topology_version,
+							      topology->topology_version);
 				free((void *)topology->ptr_entities);
 				free((void *)topology->ptr_interfaces);
 				topology_version = topology->topology_version;
@@ -258,9 +262,10 @@ int media_scan_topology(VADriverContextP context, struct driver *driver, int id,
 				video_path = udev_get_devpath(context, devnode);
 				asprintf(&decoder->video_path, "%s", video_path);
 
-				request_log(" interface: type %s, device %s\n",
-					media_interface_type(interface->intf_type),
-					video_path);
+				if (g_v4l2_request_debug_option_flags)
+					v4l2_request_log_info(context, " interface: type %s, device %s\n",
+							      media_interface_type(interface->intf_type),
+							      video_path);
 
 				/* check capabilities */
 				video_fd = open(decoder->video_path, O_RDWR | O_NONBLOCK);
@@ -280,8 +285,9 @@ int media_scan_topology(VADriverContextP context, struct driver *driver, int id,
 				}
 				else {
 					decoder->capabilities = capabilities;
-					request_log(" capabilities: mask %ld\n",
-						    decoder->capabilities);
+					if (g_v4l2_request_debug_option_flags)
+						v4l2_request_log_info(context, " capabilities: mask %ld\n",
+								      decoder->capabilities);
 				}
 			}
 		}
