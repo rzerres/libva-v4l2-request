@@ -257,7 +257,91 @@ void request_log(const char *format, ...)
 	va_end(arguments);
 }
 
-char *udev_get_devpath(struct media_v2_intf_devnode *devnode)
+bool v4l2_request_ensure_vendor_string(struct v4l2_request_data *v4l2_request)
+{
+    int rc, len;
+
+    if (v4l2_request->va_vendor[0] != '\0')
+	return true;
+
+    len = 0;
+    rc = snprintf(v4l2_request->va_vendor, sizeof(v4l2_request->va_vendor),
+		   "%s %s driver - %s.%s.%s",
+		   V4L2_REQUEST_STR_DRIVER_VENDOR, V4L2_REQUEST_STR_DRIVER_NAME,
+		   V4L2_REQUEST_DRIVER_MAJOR_VERSION, V4L2_REQUEST_DRIVER_MINOR_VERSION,
+		   V4L2_REQUEST_DRIVER_MICRO_VERSION);
+    if (rc < 0 || rc >= sizeof(v4l2_request->va_vendor))
+	goto error;
+    len = rc;
+
+    if (V4L2_REQUEST_DRIVER_PRE_VERSION != NULL) {
+	rc = snprintf(&v4l2_request->va_vendor[len], sizeof(v4l2_request->va_vendor) - len,
+		       ".pre%s", V4L2_REQUEST_DRIVER_PRE_VERSION);
+	if (rc < 0 || rc >= (sizeof(v4l2_request->va_vendor) - len))
+	    goto error;
+	len += rc;
+
+	rc = snprintf(&v4l2_request->va_vendor[len], sizeof(v4l2_request->va_vendor) - len,
+		       " (%s)", V4L2_REQUEST_DRIVER_GIT_VERSION);
+	if (rc < 0 || rc >= (sizeof(v4l2_request->va_vendor) - len))
+	    goto error;
+	len += rc;
+    }
+    return true;
+
+error:
+    v4l2_request->va_vendor[0] = '\0';
+    v4l2_request_assert_rc(rc > 0 && len < sizeof(v4l2_request->va_vendor), false);
+    return false;
+}
+
+void v4l2_request_log_error(VADriverContextP context, const char *format, ...)
+{
+    va_list vl;
+
+    va_start(vl, format);
+
+    if (!context->error_callback) {
+	// No error callback: this is a error message which should be
+	// user-visible, so print it to stderr instead.
+	vfprintf(stderr, format, vl);
+    } else {
+	// Put the message on the stack.  If it overruns the size of the
+	// then it will just be truncated - callers shouldn't be sending
+	// messages which are too long.
+	char tmp[1024];
+	int rc;
+	rc = vsnprintf(tmp, sizeof(tmp), format, vl);
+	if (rc > 0)
+	    context->error_callback(context, tmp);
+    }
+
+    va_end(vl);
+}
+
+void v4l2_request_log_info(VADriverContextP context, const char *format, ...)
+{
+	va_list vl;
+
+	va_start(vl, format);
+
+	if (!context->info_callback) {
+		// Message is only useful for developers, so just discard it.
+	} else {
+		/* Put the message on the stack.
+		 * Truncate size to avoid string overrun.
+		 */
+		char tmp[1024];
+		int rc;
+		rc = vsnprintf(tmp, sizeof(tmp), format, vl);
+		if (rc > 0)
+			context->info_callback(context, tmp);
+	}
+
+	va_end(vl);
+}
+
+char *udev_get_devpath(VADriverContextP context, struct media_v2_intf_devnode *devnode)
 {
 	struct udev *udev;
 	struct udev_device *device;
