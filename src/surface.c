@@ -53,7 +53,7 @@ VAStatus RequestCreateSurfaces2(VADriverContextP context, unsigned int format,
 				VASurfaceAttrib *attributes,
 				unsigned int attributes_count)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	struct object_surface *surface_object;
 	struct video_format *video_format = NULL;
 	unsigned int destination_sizes[VIDEO_MAX_PLANES];
@@ -71,13 +71,13 @@ VAStatus RequestCreateSurfaces2(VADriverContextP context, unsigned int format,
 	if (format != VA_RT_FORMAT_YUV420)
 		return VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT;
 
-	found = v4l2_find_format(driver_data->video_fd,
+	found = v4l2_find_format(v4l2_request->video_fd,
 				 V4L2_BUF_TYPE_VIDEO_CAPTURE,
 				 V4L2_PIX_FMT_SUNXI_TILED_NV12);
 	if (found)
 		video_format = video_format_find(V4L2_PIX_FMT_SUNXI_TILED_NV12);
 
-	found = v4l2_find_format(driver_data->video_fd,
+	found = v4l2_find_format(v4l2_request->video_fd,
 				 V4L2_BUF_TYPE_VIDEO_CAPTURE,
 				 V4L2_PIX_FMT_NV12);
 	if (found)
@@ -86,24 +86,24 @@ VAStatus RequestCreateSurfaces2(VADriverContextP context, unsigned int format,
 	if (video_format == NULL)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 
-	driver_data->video_format = video_format;
+	v4l2_request->video_format = video_format;
 
 	capture_type = v4l2_type_video_capture(video_format->v4l2_mplane);
 
-	rc = v4l2_set_format(driver_data->video_fd, capture_type,
+	rc = v4l2_set_format(context, v4l2_request->video_fd, capture_type,
 			     video_format->v4l2_format, width, height);
 	if (rc < 0)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 
-	rc = v4l2_get_format(driver_data->video_fd, capture_type, &format_width,
-			     &format_height, destination_bytesperlines,
-			     destination_sizes, NULL);
+	rc = v4l2_get_format(context, v4l2_request->video_fd, capture_type,
+			     &format_width, &format_height,
+			     destination_bytesperlines, destination_sizes, NULL);
 	if (rc < 0)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 
 	destination_planes_count = video_format->planes_count;
 
-	rc = v4l2_create_buffers(driver_data->video_fd, capture_type,
+	rc = v4l2_create_buffers(context, v4l2_request->video_fd, capture_type,
 				 surfaces_count, &index_base);
 	if (rc < 0)
 		return VA_STATUS_ERROR_ALLOCATION_FAILED;
@@ -111,13 +111,13 @@ VAStatus RequestCreateSurfaces2(VADriverContextP context, unsigned int format,
 	for (i = 0; i < surfaces_count; i++) {
 		index = index_base + i;
 
-		id = object_heap_allocate(&driver_data->surface_heap);
-		surface_object = SURFACE(driver_data, id);
+		id = object_heap_allocate(&v4l2_request->surface_heap);
+		surface_object = SURFACE(v4l2_request, id);
 		if (surface_object == NULL)
 			return VA_STATUS_ERROR_ALLOCATION_FAILED;
 
-		rc = v4l2_query_buffer(driver_data->video_fd, capture_type,
-				       index,
+		rc = v4l2_query_buffer(context, v4l2_request->video_fd,
+				       capture_type, index,
 				       surface_object->destination_map_lengths,
 				       surface_object->destination_map_offsets,
 				       video_format->v4l2_buffers_count);
@@ -129,7 +129,7 @@ VAStatus RequestCreateSurfaces2(VADriverContextP context, unsigned int format,
 				mmap(NULL,
 				     surface_object->destination_map_lengths[j],
 				     PROT_READ | PROT_WRITE, MAP_SHARED,
-				     driver_data->video_fd,
+				     v4l2_request->video_fd,
 				     surface_object->destination_map_offsets[j]);
 
 			if (surface_object->destination_map[j] == MAP_FAILED)
@@ -213,12 +213,12 @@ VAStatus RequestCreateSurfaces(VADriverContextP context, int width, int height,
 VAStatus RequestDestroySurfaces(VADriverContextP context,
 				VASurfaceID *surfaces_ids, int surfaces_count)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	struct object_surface *surface_object;
 	unsigned int i, j;
 
 	for (i = 0; i < surfaces_count; i++) {
-		surface_object = SURFACE(driver_data, surfaces_ids[i]);
+		surface_object = SURFACE(v4l2_request, surfaces_ids[i]);
 		if (surface_object == NULL)
 			return VA_STATUS_ERROR_INVALID_SURFACE;
 
@@ -236,7 +236,7 @@ VAStatus RequestDestroySurfaces(VADriverContextP context,
 		if (surface_object->request_fd > 0)
 			close(surface_object->request_fd);
 
-		object_heap_free(&driver_data->surface_heap,
+		object_heap_free(&v4l2_request->surface_heap,
 				 (struct object_base *)surface_object);
 	}
 
@@ -245,7 +245,7 @@ VAStatus RequestDestroySurfaces(VADriverContextP context,
 
 VAStatus RequestSyncSurface(VADriverContextP context, VASurfaceID surface_id)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	struct object_surface *surface_object;
 	VAStatus status;
 	struct video_format *video_format;
@@ -253,7 +253,7 @@ VAStatus RequestSyncSurface(VADriverContextP context, VASurfaceID surface_id)
 	int request_fd = -1;
 	int rc;
 
-	video_format = driver_data->video_format;
+	video_format = v4l2_request->video_format;
 	if (video_format == NULL) {
 		status = VA_STATUS_ERROR_OPERATION_FAILED;
 		goto error;
@@ -262,7 +262,7 @@ VAStatus RequestSyncSurface(VADriverContextP context, VASurfaceID surface_id)
 	output_type = v4l2_type_video_output(video_format->v4l2_mplane);
 	capture_type = v4l2_type_video_capture(video_format->v4l2_mplane);
 
-	surface_object = SURFACE(driver_data, surface_id);
+	surface_object = SURFACE(v4l2_request, surface_id);
 	if (surface_object == NULL) {
 		status = VA_STATUS_ERROR_INVALID_SURFACE;
 		goto error;
@@ -279,32 +279,32 @@ VAStatus RequestSyncSurface(VADriverContextP context, VASurfaceID surface_id)
 		goto error;
 	}
 
-	rc = media_request_queue(request_fd);
+	rc = media_request_queue(context, request_fd);
 	if (rc < 0) {
 		status = VA_STATUS_ERROR_OPERATION_FAILED;
 		goto error;
 	}
 
-	rc = media_request_wait_completion(request_fd);
+	rc = media_request_wait_completion(context, request_fd);
 	if (rc < 0) {
 		status = VA_STATUS_ERROR_OPERATION_FAILED;
 		goto error;
 	}
 
-	rc = media_request_reinit(request_fd);
+	rc = media_request_reinit(context, request_fd);
 	if (rc < 0) {
 		status = VA_STATUS_ERROR_OPERATION_FAILED;
 		goto error;
 	}
 
-	rc = v4l2_dequeue_buffer(driver_data->video_fd, -1, output_type,
+	rc = v4l2_dequeue_buffer(context, v4l2_request->video_fd, -1, output_type,
 				 surface_object->source_index, 1);
 	if (rc < 0) {
 		status = VA_STATUS_ERROR_OPERATION_FAILED;
 		goto error;
 	}
 
-	rc = v4l2_dequeue_buffer(driver_data->video_fd, -1, capture_type,
+	rc = v4l2_dequeue_buffer(context, v4l2_request->video_fd, -1, capture_type,
 				 surface_object->destination_index,
 				 surface_object->destination_buffers_count);
 	if (rc < 0) {
@@ -332,7 +332,7 @@ VAStatus RequestQuerySurfaceAttributes(VADriverContextP context,
 				       VASurfaceAttrib *attributes,
 				       unsigned int *attributes_count)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	VASurfaceAttrib *attributes_list;
 	unsigned int attributes_list_size = V4L2_REQUEST_MAX_CONFIG_ATTRIBUTES *
 					    sizeof(*attributes);
@@ -385,7 +385,7 @@ VAStatus RequestQuerySurfaceAttributes(VADriverContextP context,
 	 * that are required for supporting the tiled output format.
 	 */
 
-	if (video_format_is_linear(driver_data->video_format))
+	if (video_format_is_linear(v4l2_request->video_format))
 		memory_types |= VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME;
 
 	attributes_list[i].value.value.i = memory_types;
@@ -407,10 +407,10 @@ VAStatus RequestQuerySurfaceStatus(VADriverContextP context,
 				   VASurfaceID surface_id,
 				   VASurfaceStatus *status)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	struct object_surface *surface_object;
 
-	surface_object = SURFACE(driver_data, surface_id);
+	surface_object = SURFACE(v4l2_request, surface_id);
 	if (surface_object == NULL)
 		return VA_STATUS_ERROR_INVALID_SURFACE;
 
@@ -450,7 +450,7 @@ VAStatus RequestExportSurfaceHandle(VADriverContextP context,
 				    VASurfaceID surface_id, uint32_t mem_type,
 				    uint32_t flags, void *descriptor)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	VADRMPRIMESurfaceDescriptor *surface_descriptor = descriptor;
 	struct object_surface *surface_object;
 	struct video_format *video_format;
@@ -463,14 +463,14 @@ VAStatus RequestExportSurfaceHandle(VADriverContextP context,
 	VAStatus status;
 	int rc;
 
-	video_format = driver_data->video_format;
+	video_format = v4l2_request->video_format;
 	if (video_format == NULL)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 
 	if (mem_type != VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2)
 		return VA_STATUS_ERROR_UNSUPPORTED_MEMORY_TYPE;
 
-	surface_object = SURFACE(driver_data, surface_id);
+	surface_object = SURFACE(v4l2_request, surface_id);
 	if (surface_object == NULL)
 		return VA_STATUS_ERROR_INVALID_SURFACE;
 
@@ -479,7 +479,7 @@ VAStatus RequestExportSurfaceHandle(VADriverContextP context,
 
 	capture_type = v4l2_type_video_capture(video_format->v4l2_mplane);
 
-	rc = v4l2_export_buffer(driver_data->video_fd, capture_type,
+	rc = v4l2_export_buffer(context, v4l2_request->video_fd, capture_type,
 				surface_object->destination_index, O_RDONLY,
 				export_fds, export_fds_count);
 	if (rc < 0) {

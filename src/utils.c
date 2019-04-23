@@ -25,17 +25,21 @@
  */
 
 #define _GNU_SOURCE
+#include <assert.h>
 #include <libudev.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <linux/media.h>
+#include <linux/videodev2.h>
+
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 
-#include <linux/media.h>
-#include <linux/videodev2.h>
+#include <va/va_backend.h>
+
 #include "request.h"
 #include "media.h"
 #include "utils.h"
@@ -113,23 +117,24 @@ void driver_free(struct driver *driver)
 	driver->decoder = NULL;
 }
 
-struct decoder *driver_get(struct driver *driver, int id)
+struct decoder *driver_get(VADriverContextP context, struct driver *driver, int id)
 {
 	if (id > driver->num_decoders || id < 0) {
-		printf("Id %d out of bounds for driver of %d entities\n", id, driver->num_decoders);
+		v4l2_request_log_error(context, "Id %d out of bounds for driver of %d entities\n",
+				      id, driver->num_decoders);
 		return NULL;
 	}
 
 	return driver->decoder[id];
 }
 
-__u32 driver_get_capabilities(struct driver *driver, int id)
+__u32 driver_get_capabilities(VADriverContextP context, struct driver *driver, int id)
 {
 	struct decoder *decoder;
 
 	if (id >= driver->num_decoders || id < 0) {
-		request_log("Id '%d' out of bounds. Only handle %d decoders yet.\n",
-		       id, driver->num_decoders);
+		v4l2_request_log_error(context, "Id '%d' out of bounds. Only handle %d decoders yet.\n",
+				       id, driver->num_decoders);
 		return -1;
 	}
 
@@ -170,10 +175,10 @@ void driver_init(struct driver *driver)
 	driver->decoder = calloc(driver->capacity, sizeof(struct decoder));
 }
 
-void driver_print(struct driver *driver, int id)
+void driver_print(VADriverContextP context, struct driver *driver, int id)
 {
 	if (id >= driver->num_decoders || id < 0) {
-		request_log("Id '%d' out of bounds. Only handle %d decoders yet.\n",
+		v4l2_request_log_info(context, "Id '%d' out of bounds. Only handle %d decoders yet.\n",
 		       id, driver->num_decoders);
 	}
 
@@ -187,7 +192,7 @@ void driver_print(struct driver *driver, int id)
 		    decoder->capabilities);
 }
 
-void driver_print_all(struct driver *driver)
+void driver_print_all(VADriverContextP context, struct driver *driver)
 {
 	request_log("Driver: num_decoders: %d, capacity: %d\n",
 		    driver->num_decoders,
@@ -228,12 +233,12 @@ void driver_set(struct driver *driver, int id, void *decoder)
 	driver->decoder[id] = decoder;
 }
 
-__u32 driver_set_capabilities(struct driver *driver, int id, unsigned int capabilities)
+__u32 driver_set_capabilities(VADriverContextP context, struct driver *driver, int id, unsigned int capabilities)
 {
 	struct decoder *decoder;
 
 	if (id >= driver->num_decoders || id < 0) {
-		request_log("Id '%d' out of bounds. Only handle %d decoders yet.\n",
+		v4l2_request_log_info(context, "Id '%d' out of bounds. Only handle %d decoders yet.\n",
 		       id, driver->num_decoders);
 		return -1;
 	}
@@ -250,7 +255,7 @@ void request_log(const char *format, ...)
 {
 	va_list arguments;
 
-	fprintf(stderr, "%s: ", V4L2_REQUEST_STR_VENDOR);
+	fprintf(stderr, "%s: ", V4L2_REQUEST_STR_DRIVER_VENDOR);
 
 	va_start(arguments, format);
 	vfprintf(stderr, format, arguments);
@@ -352,7 +357,7 @@ char *udev_get_devpath(VADriverContextP context, struct media_v2_intf_devnode *d
 
 	udev = udev_new();
 	if (!udev) {
-		request_log("Can’t create udev object.\n");
+		v4l2_request_log_error(context, "Can’t create udev object.\n");
 		return NULL;
 	}
 
@@ -372,7 +377,7 @@ char *udev_get_devpath(VADriverContextP context, struct media_v2_intf_devnode *d
 	return devname;
 }
 
-int udev_scan_subsystem(struct driver *driver, char *subsystem)
+int udev_scan_subsystem(VADriverContextP context, struct driver *driver, char *subsystem)
 {
 	struct udev *udev;
 	struct udev_enumerate *enumerate;
@@ -394,13 +399,13 @@ int udev_scan_subsystem(struct driver *driver, char *subsystem)
 	enumerate = udev_enumerate_new(udev);
 	rc = udev_enumerate_add_match_subsystem(enumerate, subsystem);
 	if (rc < 0) {
-		request_log("udev: can't filter sysbsystem %s.\n",
+		v4l2_request_log_error(context, "udev: can't filter sysbsystem %s.\n",
 			subsystem);
 		return rc;
 	}
 	rc = udev_enumerate_scan_devices(enumerate);
 	if (rc < 0) {
-		request_log("udev: can't scan devices.\n");
+		v4l2_request_log_error(context, "udev: can't scan devices.\n");
 		return rc;
 	}
 	devices = udev_enumerate_get_list_entry(enumerate);
@@ -444,7 +449,7 @@ int udev_scan_subsystem(struct driver *driver, char *subsystem)
 			driver_set(driver, y, decoder);
 
 			/* use media topology to select capable video-decoders. */
-			rc = media_scan_topology(driver, y, node_path);
+			rc = media_scan_topology(context, driver, y, node_path);
 			if (rc <= 0) {
 				request_log("model '%s' doesn't offer streaming via v4l2 video-decoder.\n",
 					udev_device_get_sysattr_value(dev, "model"));

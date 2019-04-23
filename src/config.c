@@ -2,6 +2,7 @@
  * Copyright (C) 2007 Intel Corporation
  * Copyright (C) 2016 Florent Revest <florent.revest@free-electrons.com>
  * Copyright (C) 2018 Paul Kocialkowski <paul.kocialkowski@bootlin.com>
+ * Copyright (C) 2019 Ralf Zerres <ralf.zerres@networkx.de>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the
@@ -43,7 +44,7 @@ VAStatus RequestCreateConfig(VADriverContextP context, VAProfile profile,
 			     VAConfigAttrib *attributes, int attributes_count,
 			     VAConfigID *config_id)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	struct object_config *config_object;
 	VAConfigID id;
 	int i, index;
@@ -68,8 +69,8 @@ VAStatus RequestCreateConfig(VADriverContextP context, VAProfile profile,
 	if (attributes_count > V4L2_REQUEST_MAX_CONFIG_ATTRIBUTES)
 		attributes_count = V4L2_REQUEST_MAX_CONFIG_ATTRIBUTES;
 
-	id = object_heap_allocate(&driver_data->config_heap);
-	config_object = CONFIG(driver_data, id);
+	id = object_heap_allocate(&v4l2_request->config_heap);
+	config_object = CONFIG(v4l2_request, id);
 	if (config_object == NULL)
 		return VA_STATUS_ERROR_ALLOCATION_FAILED;
 
@@ -93,14 +94,14 @@ VAStatus RequestCreateConfig(VADriverContextP context, VAProfile profile,
 
 VAStatus RequestDestroyConfig(VADriverContextP context, VAConfigID config_id)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	struct object_config *config_object;
 
-	config_object = CONFIG(driver_data, config_id);
+	config_object = CONFIG(v4l2_request, config_id);
 	if (config_object == NULL)
 		return VA_STATUS_ERROR_INVALID_CONFIG;
 
-	object_heap_free(&driver_data->config_heap,
+	object_heap_free(&v4l2_request->config_heap,
 			 (struct object_base *)config_object);
 
 	return VA_STATUS_SUCCESS;
@@ -109,11 +110,11 @@ VAStatus RequestDestroyConfig(VADriverContextP context, VAConfigID config_id)
 VAStatus RequestQueryConfigProfiles(VADriverContextP context,
 				    VAProfile *profiles, int *profiles_count)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	unsigned int index = 0;
 	bool found;
 
-	found = v4l2_find_format(driver_data->video_fd,
+	found = v4l2_find_format(v4l2_request->video_fd,
 				 V4L2_BUF_TYPE_VIDEO_OUTPUT,
 				 V4L2_PIX_FMT_MPEG2_SLICE);
 	if (found && index < (V4L2_REQUEST_MAX_CONFIG_ATTRIBUTES - 2)) {
@@ -122,7 +123,7 @@ VAStatus RequestQueryConfigProfiles(VADriverContextP context,
 	}
 
 	/*
-	found = v4l2_find_format(driver_data->video_fd,
+	found = v4l2_find_format(v4l2_request->video_fd,
 				 V4L2_BUF_TYPE_VIDEO_OUTPUT,
 				 V4L2_PIX_FMT_H264_SLICE);
 	*/
@@ -135,7 +136,7 @@ VAStatus RequestQueryConfigProfiles(VADriverContextP context,
 	}
 
 	/*
-	found = v4l2_find_format(driver_data->video_fd,
+	found = v4l2_find_format(v4l2_request->video_fd,
 				 V4L2_BUF_TYPE_VIDEO_OUTPUT,
 				 V4L2_PIX_FMT_HEVC_SLICE);
 	*/
@@ -179,11 +180,11 @@ VAStatus RequestQueryConfigAttributes(VADriverContextP context,
 				      VAConfigAttrib *attributes,
 				      int *attributes_count)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	struct object_config *config_object;
 	int i;
 
-	config_object = CONFIG(driver_data, config_id);
+	config_object = CONFIG(v4l2_request, config_id);
 	if (config_object == NULL)
 		return VA_STATUS_ERROR_INVALID_CONFIG;
 

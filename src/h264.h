@@ -32,9 +32,11 @@
 
 #include <va/va.h>
 
+#include "request.h"
+
 struct object_context;
 struct object_surface;
-struct request_data;
+struct v4l2_request_data;
 
 #define H264_DPB_SIZE 16
 
@@ -51,8 +53,9 @@ struct h264_dpb {
 	unsigned int age;
 };
 
-int h264_set_controls(struct request_data *data,
-		      struct object_context *context,
-		      struct object_surface *surface);
+int h264_set_controls(VADriverContextP context,
+		      struct v4l2_request_data *data,
+		      struct object_context *context_object,
+		      struct object_surface *surface_object);
 
 #endif

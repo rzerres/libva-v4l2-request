@@ -36,45 +36,204 @@
 
 #include "autoconfig.h"
 
-#include <va/va_backend.h>
-
 #include "request.h"
 #include "utils.h"
 #include "v4l2.h"
 
 #include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <fcntl.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #include <sys/ioctl.h>
 
 #include <linux/videodev2.h>
+#include <va/va_backend.h>
 
 /* Set default visibility for the init function only. */
 VAStatus __attribute__((visibility("default")))
 VA_DRIVER_INIT_FUNC(VADriverContextP context);
+#define CONFIG_ID_OFFSET                0x01000000
+#define CONTEXT_ID_OFFSET               0x02000000
+#define SURFACE_ID_OFFSET               0x04000000
+#define BUFFER_ID_OFFSET                0x08000000
+#define IMAGE_ID_OFFSET                 0x0a000000
+#define SUBPIC_ID_OFFSET                0x10000000
 
-/*
- *  may we can substitue this function when deducing the
- *  driver-name from topology
+uint32_t g_v4l2_request_debug_option_flags = 0;
 
-static int v4l2_callback(struct device *dev, void *p)
+static bool v4l2_request_DataInit(VADriverContextP context)
 {
-	struct v4l2_device *v4l2_dev = dev_get_drvdata(dev);
+	// access driver specific data via context->pDriverData
+	struct v4l2_request_data *v4l2_request = v4l2_request_RequestData(context);
 
-	// test if we have initialized drivers
-	if (v4l2_dev == NULL)
-		return 0;
+	//struct drm_state * const drm_state = (struct drm_state *)context->drm_state;
+	//int has_exec2 = 0, has_bsd = 0, has_blt = 0, has_vebox = 0;
+	char *env_str = NULL;
 
-	return 0;
+	// Debug settings
+	if ((env_str = getenv("VA_V4L2_REQUEST_DEBUG")))
+		g_v4l2_request_debug_option_flags = atoi(env_str);
+
+	if (g_v4l2_request_debug_option_flags)
+		v4l2_request_log_info(context, "Debug settings: %x\n", g_v4l2_request_debug_option_flags);
+
+
+	//v4l2_request_driver_get_revid(v4l2_request, &v4l2_request->revision);
+
+	// prepare VendorString
+	if (!v4l2_request_VendorString(v4l2_request))
+	    return VA_STATUS_ERROR_ALLOCATION_FAILED;
+
+	// initialize the object heap
+	if (object_heap_init(&v4l2_request->config_heap,
+			     sizeof(struct object_config),
+			     CONFIG_ID_OFFSET))
+		goto err_config_heap;
+
+	if (object_heap_init(&v4l2_request->context_heap,
+			     sizeof(struct object_context),
+			     CONTEXT_ID_OFFSET))
+		goto err_context_heap;
+
+	if (object_heap_init(&v4l2_request->surface_heap,
+			     sizeof(struct object_surface),
+			     SURFACE_ID_OFFSET))
+		goto err_surface_heap;
+
+	if (object_heap_init(&v4l2_request->buffer_heap,
+			     sizeof(struct object_buffer),
+			     BUFFER_ID_OFFSET))
+		goto err_buffer_heap;
+
+	if (object_heap_init(&v4l2_request->image_heap,
+			     sizeof(struct object_image),
+			     IMAGE_ID_OFFSET))
+		goto err_image_heap;
+
+	/*
+	if (object_heap_init(&v4l2_request->subpic_heap,
+			     sizeof(struct object_subpic),
+			     SUBPIC_ID_OFFSET))
+			goto err_subpic_heap;
+	*/
+
+	//v4l2_request->batch = v4l2_request_batchbuffer_new(&v4l2_request->v4l2_request, I915_EXEC_RENDER, 0);
+	//v4l2_request->pp_batch = v4l2_request_batchbuffer_new(&v4l2_request->v4l2_request, I915_EXEC_RENDER, 0);
+	//_v4l2_requestInitMutex(&v4l2_request->render_mutex);
+	//_v4l2_requestInitMutex(&v4l2_request->pp_mutex);
+
+	return true;
+
+//err_subpic_heap:
+//	object_heap_destroy(&v4l2_request->image_heap);
+err_image_heap:
+	object_heap_destroy(&v4l2_request->buffer_heap);
+err_buffer_heap:
+	object_heap_destroy(&v4l2_request->surface_heap);
+err_surface_heap:
+	object_heap_destroy(&v4l2_request->context_heap);
+err_context_heap:
+	object_heap_destroy(&v4l2_request->config_heap);
+err_config_heap:
+
+	return false;
 }
 
-int v4l2_iterate(void *p)
+VAStatus  v4l2_request_DataTerminate(VADriverContextP context)
+{
+	struct v4l2_request_data *v4l2_request = v4l2_request_RequestData(context);
+	//pthread_mutex_destroy(&v4l2_request->contextmutex);
+
+	struct object_buffer *buffer_object;
+	struct object_image *image_object;
+	struct object_surface *surface_object;
+	struct object_context *context_object;
+	struct object_config *config_object;
+	int iterator;
+
+	close(v4l2_request->video_fd);
+	close(v4l2_request->media_fd);
+
+	/* Cleanup leftover buffers. */
+	/*
+	subpic_object = (struct object_subpic *)
+		object_heap_first(&v4l2_request->subpic_heap, &iterator);
+	while (subpic_object != NULL) {
+		RequestDestroyBuffer(context, (VASubpicID)buffer_object->base.id);
+		subpic_object = (struct object_subpic *)
+			object_heap_next(&v4l2_request->subpic_heap, &iterator);
+	}
+
+	object_heap_destroy(&v4l2_request->subpic_heap);
+	*/
+
+	image_object = (struct object_image *)
+		object_heap_first(&v4l2_request->image_heap, &iterator);
+	while (image_object != NULL) {
+		RequestDestroyImage(context, (VAImageID)image_object->base.id);
+		image_object = (struct object_image *)
+			object_heap_next(&v4l2_request->image_heap, &iterator);
+	}
+
+	object_heap_destroy(&v4l2_request->image_heap);
+
+	buffer_object = (struct object_buffer *)
+		object_heap_first(&v4l2_request->buffer_heap, &iterator);
+	while (buffer_object != NULL) {
+		RequestDestroyBuffer(context,
+				     (VABufferID)buffer_object->base.id);
+		buffer_object = (struct object_buffer *)
+			object_heap_next(&v4l2_request->buffer_heap, &iterator);
+	}
+
+	object_heap_destroy(&v4l2_request->buffer_heap);
+
+	surface_object = (struct object_surface *)
+		object_heap_first(&v4l2_request->surface_heap, &iterator);
+	while (surface_object != NULL) {
+		RequestDestroySurfaces(context,
+				      (VASurfaceID *)&surface_object->base.id, 1);
+		surface_object = (struct object_surface *)
+			object_heap_next(&v4l2_request->surface_heap, &iterator);
+	}
+
+	object_heap_destroy(&v4l2_request->surface_heap);
+
+	context_object = (struct object_context *)
+		object_heap_first(&v4l2_request->context_heap, &iterator);
+	while (context_object != NULL) {
+		RequestDestroyContext(context,
+				      (VAContextID)context_object->base.id);
+		context_object = (struct object_context *)
+			object_heap_next(&v4l2_request->context_heap, &iterator);
+	}
+
+	object_heap_destroy(&v4l2_request->context_heap);
+
+	config_object = (struct object_config *)
+		object_heap_first(&v4l2_request->config_heap, &iterator);
+	while (config_object != NULL) {
+		RequestDestroyConfig(context,
+				     (VAConfigID)config_object->base.id);
+		config_object = (struct object_config *)
+			object_heap_next(&v4l2_request->config_heap, &iterator);
+	}
+
+	object_heap_destroy(&v4l2_request->config_heap);
+
+	//free(context->pDriverData);
+	//context->pDriverData = NULL;
+	free(v4l2_request);
+	v4l2_request = NULL;
+
+	return VA_STATUS_SUCCESS;
+}
+
+static bool v4l2_request_DriverInit(VADriverContextP context, struct driver *driver)
 {
 	struct device_driver *drv;
 	int rc;
@@ -90,7 +249,6 @@ int v4l2_iterate(void *p)
 
 	return rc;
 }
-*/
 
 VAStatus VA_DRIVER_INIT_FUNC(VADriverContextP context)
 {
@@ -118,7 +276,7 @@ VAStatus VA_DRIVER_INIT_FUNC(VADriverContextP context)
 	context->max_display_attributes = V4L2_REQUEST_MAX_DISPLAY_ATTRIBUTES;
 	context->str_vendor = V4L2_REQUEST_STR_VENDOR;
 
-	vtable->vaTerminate = RequestTerminate;
+	vtable->vaTerminate = v4l2_request_DataTerminate;
 	vtable->vaQueryConfigEntrypoints = RequestQueryConfigEntrypoints;
 	vtable->vaQueryConfigProfiles = RequestQueryConfigProfiles;
 	vtable->vaQueryConfigEntrypoints = RequestQueryConfigEntrypoints;
@@ -171,7 +329,8 @@ VAStatus VA_DRIVER_INIT_FUNC(VADriverContextP context)
 	driver_data = malloc(sizeof(*driver_data));
 	memset(driver_data, 0, sizeof(*driver_data));
 
-	context->pDriverData = driver_data;
+	/* initialize driver data structure */
+	v4l2_request = (struct v4l2_request_data *)calloc(1, sizeof(*v4l2_request));
 
 	object_heap_init(&driver_data->config_heap,
 			 sizeof(struct object_config), CONFIG_ID_OFFSET);
@@ -203,19 +362,29 @@ VAStatus VA_DRIVER_INIT_FUNC(VADriverContextP context)
 		rc = media_scan_topology(driver, id);
 	}
 
-	if (rc < 0) {
-		request_log("No suitable v4l2 decoder found\n");
+	if (driver_get_num_decoders(driver) > 0) {
+		driver_print_all(context, driver);
+		/*
+		 * first decoder id: assign its elements
+		 * to the corresponding config elements
+		 */
+		decoder = driver_get(context, driver, 0);
+		v4l2_request_log_info(context, "Decoders: %i (Select: '%s', media_path: %s, video_path: %s, capabilities: %ld)\n",
+			    driver->num_decoders,
+			    decoder->name,
+			    decoder->media_path,
+			    decoder->video_path,
+			    decoder->capabilities);
+	}
+	else {
+		v4l2_request_log_error(context, "No suitable v4l2 decoder found.\n");
 		status = VA_STATUS_ERROR_INVALID_CONFIG;
 		goto error;
 	}
 
 	driver_print(driver);
 
-	/*
-	video_path = getenv("LIBVA_V4L2_REQUEST_VIDEO_PATH");
-	if (video_path == NULL)
-		video_path = "/dev/video0";
-
+	// open media pipeline
 	video_fd = open(video_path, O_RDWR | O_NONBLOCK);
 	if (video_fd < 0)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
@@ -242,79 +411,4 @@ error:
 
 complete:
 	return status;
-}
-
-VAStatus RequestTerminate(VADriverContextP context)
-{
-	struct request_data *driver_data = context->pDriverData;
-	struct object_buffer *buffer_object;
-	struct object_image *image_object;
-	struct object_surface *surface_object;
-	struct object_context *context_object;
-	struct object_config *config_object;
-	int iterator;
-
-	close(driver_data->video_fd);
-	close(driver_data->media_fd);
-
-	/* Cleanup leftover buffers. */
-
-	image_object = (struct object_image *)
-		object_heap_first(&driver_data->image_heap, &iterator);
-	while (image_object != NULL) {
-		RequestDestroyImage(context, (VAImageID)image_object->base.id);
-		image_object = (struct object_image *)
-			object_heap_next(&driver_data->image_heap, &iterator);
-	}
-
-	object_heap_destroy(&driver_data->image_heap);
-
-	buffer_object = (struct object_buffer *)
-		object_heap_first(&driver_data->buffer_heap, &iterator);
-	while (buffer_object != NULL) {
-		RequestDestroyBuffer(context,
-				     (VABufferID)buffer_object->base.id);
-		buffer_object = (struct object_buffer *)
-			object_heap_next(&driver_data->buffer_heap, &iterator);
-	}
-
-	object_heap_destroy(&driver_data->buffer_heap);
-
-	surface_object = (struct object_surface *)
-		object_heap_first(&driver_data->surface_heap, &iterator);
-	while (surface_object != NULL) {
-		RequestDestroySurfaces(context,
-				      (VASurfaceID *)&surface_object->base.id, 1);
-		surface_object = (struct object_surface *)
-			object_heap_next(&driver_data->surface_heap, &iterator);
-	}
-
-	object_heap_destroy(&driver_data->surface_heap);
-
-	context_object = (struct object_context *)
-		object_heap_first(&driver_data->context_heap, &iterator);
-	while (context_object != NULL) {
-		RequestDestroyContext(context,
-				      (VAContextID)context_object->base.id);
-		context_object = (struct object_context *)
-			object_heap_next(&driver_data->context_heap, &iterator);
-	}
-
-	object_heap_destroy(&driver_data->context_heap);
-
-	config_object = (struct object_config *)
-		object_heap_first(&driver_data->config_heap, &iterator);
-	while (config_object != NULL) {
-		RequestDestroyConfig(context,
-				     (VAConfigID)config_object->base.id);
-		config_object = (struct object_config *)
-			object_heap_next(&driver_data->config_heap, &iterator);
-	}
-
-	object_heap_destroy(&driver_data->config_heap);
-
-	free(context->pDriverData);
-	context->pDriverData = NULL;
-
-	return VA_STATUS_SUCCESS;
 }

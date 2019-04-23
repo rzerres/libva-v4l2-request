@@ -34,10 +34,12 @@
 #include <sys/select.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <va/va_backend.h>
 
 #include <linux/media.h>
 #include <linux/videodev2.h>
 
+#include "request.h"
 #include "media.h"
 #include "utils.h"
 #include "v4l2.h"
@@ -49,7 +51,7 @@ enum media_gobj_type {
 	MEDIA_GRAPH_INTF_DEVNODE,
 };
 
-static inline void *media_get_uptr(__u64 arg)
+static inline void *media_get_uptr(uint64_t arg)
 {
 	return (void *)(uintptr_t)arg;
 }
@@ -107,7 +109,7 @@ static inline uint32_t media_localid(uint32_t id)
 }
 */
 
-int media_scan_topology(struct driver *driver, int id, const char *path)
+int media_scan_topology(VADriverContextP context, struct driver *driver, int id, const char *path)
 {
 	/* https://www.kernel.org/doc/html/v5.0/media/uapi/mediactl/media-ioc-g-topology.html */
 	struct media_v2_topology *topology = NULL;
@@ -123,14 +125,13 @@ int media_scan_topology(struct driver *driver, int id, const char *path)
 	unsigned int capabilities;
 	unsigned int capabilities_required;
 
-
 	decoder = driver->decoder[id];
 	request_log("Scan topology for media-device %s ...\n",
 		    path);
 
 	media_fd = open(path, O_RDWR | O_NONBLOCK, 0);
 	if (media_fd < 0) {
-		request_log("Unable to open media node: %s (%d)\n",
+		v4l2_request_log_error(context, "Unable to open media node: %s (%d)\n",
 			strerror(errno), errno);
 		return rc;
 	}
@@ -138,7 +139,7 @@ int media_scan_topology(struct driver *driver, int id, const char *path)
 	device = calloc(1, sizeof(struct media_device_info));
 	rc = ioctl(media_fd, MEDIA_IOC_DEVICE_INFO, device);
 	if (rc < 0) {
-		request_log(" error: media device info can't be initialized!\n");
+		v4l2_request_log_error(context, " error: media device info can't be initialized!\n");
 		return rc;
 	}
 
@@ -158,7 +159,7 @@ int media_scan_topology(struct driver *driver, int id, const char *path)
 
 	rc = ioctl(media_fd, MEDIA_IOC_G_TOPOLOGY, topology);
 	if (rc < 0) {
-		request_log(" error: topology can't be initialized!\n");
+		v4l2_request_log_error(context, " error: topology can't be initialized!\n");
 		return rc;
 	}
 
@@ -204,7 +205,7 @@ int media_scan_topology(struct driver *driver, int id, const char *path)
 				topology_version = topology->topology_version;
 				continue;
 			}
-			request_log(" Topology %lld update error!\n",
+			v4l2_request_log_error(context, " Topology %lld update error!\n",
 				topology_version);
 			goto error;
 		}
@@ -224,7 +225,8 @@ int media_scan_topology(struct driver *driver, int id, const char *path)
 			is_decoder = true;
 			decoder->id = entity->id;
 			asprintf(&decoder->name, "%s", entity->name);
-			request_log(" entity: %s\n", entity->name);
+			if (g_v4l2_request_debug_option_flags)
+				v4l2_request_log_info(context, " entity: %s\n", entity->name);
 		}
 	}
 
@@ -247,13 +249,13 @@ int media_scan_topology(struct driver *driver, int id, const char *path)
 				if (devnode->minor == -1)
 					devnode->minor = 10;
 				/*
-				  request_log(" devnode: major->%d, minor->%d\n",
+				  v4l2_request_log_info(context, " devnode: major->%d, minor->%d\n",
 					    devnode->major,
 					    devnode->minor);
 				*/
 
 
-				video_path = udev_get_devpath(devnode);
+				video_path = udev_get_devpath(context, devnode);
 				asprintf(&decoder->video_path, "%s", video_path);
 
 				request_log(" interface: type %s, device %s\n",
@@ -273,7 +275,7 @@ int media_scan_topology(struct driver *driver, int id, const char *path)
 				capabilities_required = V4L2_CAP_STREAMING;
 
 				if ((capabilities & capabilities_required) != capabilities_required) {
-					request_log("Missing required driver capabilities\n");
+					v4l2_request_log_error(context, "Missing required driver capabilities\n");
 					goto error;
 				}
 				else {
@@ -323,14 +325,14 @@ complete:
 }
 
 
-int media_request_alloc(int media_fd)
+int media_request_alloc(VADriverContextP context, int media_fd)
 {
 	int fd;
 	int rc;
 
 	rc = ioctl(media_fd, MEDIA_IOC_REQUEST_ALLOC, &fd);
 	if (rc < 0) {
-		request_log("Unable to allocate media request: %s\n",
+		v4l2_request_log_error(context, "Unable to allocate media request: %s\n",
 			    strerror(errno));
 		return -1;
 	}
@@ -338,13 +340,13 @@ int media_request_alloc(int media_fd)
 	return fd;
 }
 
-int media_request_reinit(int request_fd)
+int media_request_reinit(VADriverContextP context, int request_fd)
 {
 	int rc;
 
 	rc = ioctl(request_fd, MEDIA_REQUEST_IOC_REINIT, NULL);
 	if (rc < 0) {
-		request_log("Unable to reinit media request: %s\n",
+		v4l2_request_log_error(context, "Unable to reinit media request: %s\n",
 			    strerror(errno));
 		return -1;
 	}
@@ -352,13 +354,13 @@ int media_request_reinit(int request_fd)
 	return 0;
 }
 
-int media_request_queue(int request_fd)
+int media_request_queue(VADriverContextP context, int request_fd)
 {
 	int rc;
 
 	rc = ioctl(request_fd, MEDIA_REQUEST_IOC_QUEUE, NULL);
 	if (rc < 0) {
-		request_log("Unable to queue media request: %s\n",
+		v4l2_request_log_error(context, "Unable to queue media request: %s\n",
 			    strerror(errno));
 		return -1;
 	}
@@ -366,7 +368,7 @@ int media_request_queue(int request_fd)
 	return 0;
 }
 
-int media_request_wait_completion(int request_fd)
+int media_request_wait_completion(VADriverContextP context, int request_fd)
 {
 	struct timeval tv = { 0, 300000 };
 	fd_set except_fds;
@@ -377,10 +379,10 @@ int media_request_wait_completion(int request_fd)
 
 	rc = select(request_fd + 1, NULL, NULL, &except_fds, &tv);
 	if (rc == 0) {
-		request_log("Timeout when waiting for media request\n");
+		v4l2_request_log_error(context, "Timeout when waiting for media request\n");
 		return -1;
 	} else if (rc < 0) {
-		request_log("Unable to select media request: %s\n",
+		v4l2_request_log_info(context, "Unable to select media request: %s\n",
 			    strerror(errno));
 		return -1;
 	}
@@ -388,7 +390,7 @@ int media_request_wait_completion(int request_fd)
 	return 0;
 }
 
-static inline __u32 media_type(__u32 id)
+static inline __u32 media_type(uint32_t id)
 {
 	return id >> 24;
 }

@@ -27,11 +27,14 @@
 #ifndef _H265_H_
 #define _H265_H_
 
+#include "request.h"
+
 struct object_context;
 struct object_surface;
-struct request_data;
+struct v4l2_request_data;
 
-int h265_set_controls(struct request_data *driver_data,
+int h265_set_controls(VADriverContextP context,
+		      struct v4l2_request_data *v4l2_request,
 		      struct object_context *context_object,
 		      struct object_surface *surface_object);
 

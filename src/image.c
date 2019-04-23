@@ -40,7 +40,7 @@
 VAStatus RequestCreateImage(VADriverContextP context, VAImageFormat *format,
 			    int width, int height, VAImage *image)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	unsigned int destination_sizes[VIDEO_MAX_PLANES];
 	unsigned int destination_bytesperlines[VIDEO_MAX_PLANES];
 	unsigned int destination_planes_count;
@@ -56,7 +56,7 @@ VAStatus RequestCreateImage(VADriverContextP context, VAImageFormat *format,
 	unsigned int i;
 	int rc;
 
-	video_format = driver_data->video_format;
+	video_format = v4l2_request->video_format;
 	if (video_format == NULL)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 
@@ -66,7 +66,7 @@ VAStatus RequestCreateImage(VADriverContextP context, VAImageFormat *format,
 	 * FIXME: This should be replaced by per-pixelformat hadling to
 	 * determine the logical plane offsets and sizes;
 	 */
-	rc = v4l2_get_format(driver_data->video_fd, capture_type,
+	rc = v4l2_get_format(context, v4l2_request->video_fd, capture_type,
 			     &format_width, &format_height,
 			     destination_bytesperlines, destination_sizes,
 			     &planes_count);
@@ -89,15 +89,15 @@ VAStatus RequestCreateImage(VADriverContextP context, VAImageFormat *format,
 		destination_sizes[i] = destination_sizes[0] / 2;
 	}
 
-	id = object_heap_allocate(&driver_data->image_heap);
-	image_object = IMAGE(driver_data, id);
+	id = object_heap_allocate(&v4l2_request->image_heap);
+	image_object = IMAGE(v4l2_request, id);
 	if (image_object == NULL)
 		return VA_STATUS_ERROR_ALLOCATION_FAILED;
 
 	status = RequestCreateBuffer(context, 0, VAImageBufferType, size, 1,
 				     NULL, &buffer_id);
 	if (status != VA_STATUS_SUCCESS) {
-		object_heap_free(&driver_data->image_heap,
+		object_heap_free(&v4l2_request->image_heap,
 				 (struct object_base *)image_object);
 		return status;
 	}
@@ -125,11 +125,11 @@ VAStatus RequestCreateImage(VADriverContextP context, VAImageFormat *format,
 
 VAStatus RequestDestroyImage(VADriverContextP context, VAImageID image_id)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	struct object_image *image_object;
 	VAStatus status;
 
-	image_object = IMAGE(driver_data, image_id);
+	image_object = IMAGE(v4l2_request, image_id);
 	if (image_object == NULL)
 		return VA_STATUS_ERROR_INVALID_IMAGE;
 
@@ -137,7 +137,7 @@ VAStatus RequestDestroyImage(VADriverContextP context, VAImageID image_id)
 	if (status != VA_STATUS_SUCCESS)
 		return status;
 
-	object_heap_free(&driver_data->image_heap,
+	object_heap_free(&v4l2_request->image_heap,
 			 (struct object_base *)image_object);
 
 	return VA_STATUS_SUCCESS;
@@ -146,14 +146,14 @@ VAStatus RequestDestroyImage(VADriverContextP context, VAImageID image_id)
 VAStatus RequestDeriveImage(VADriverContextP context, VASurfaceID surface_id,
 			    VAImage *image)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	struct object_surface *surface_object;
 	struct object_buffer *buffer_object;
 	VAImageFormat format;
 	unsigned int i;
 	VAStatus status;
 
-	surface_object = SURFACE(driver_data, surface_id);
+	surface_object = SURFACE(v4l2_request, surface_id);
 	if (surface_object == NULL)
 		return VA_STATUS_ERROR_INVALID_SURFACE;
 
@@ -170,12 +170,12 @@ VAStatus RequestDeriveImage(VADriverContextP context, VASurfaceID surface_id,
 	if (status != VA_STATUS_SUCCESS)
 		return status;
 
-	buffer_object = BUFFER(driver_data, image->buf);
+	buffer_object = BUFFER(v4l2_request, image->buf);
 	if (buffer_object == NULL)
 		return VA_STATUS_ERROR_INVALID_BUFFER;
 
 	for (i = 0; i < surface_object->destination_planes_count; i++) {
-		if (!video_format_is_linear(driver_data->video_format))
+		if (!video_format_is_linear(v4l2_request->video_format))
 			tiled_to_planar(surface_object->destination_data[i],
 					buffer_object->data + image->offsets[i],
 					image->pitches[i], image->width,

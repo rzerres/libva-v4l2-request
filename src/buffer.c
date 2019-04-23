@@ -49,7 +49,7 @@ VAStatus RequestCreateBuffer(VADriverContextP context, VAContextID context_id,
 			     unsigned int count, void *data,
 			     VABufferID *buffer_id)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	struct object_buffer *buffer_object = NULL;
 	void *buffer_data;
 	VAStatus status;
@@ -68,8 +68,8 @@ VAStatus RequestCreateBuffer(VADriverContextP context, VAContextID context_id,
 		goto error;
 	}
 
-	id = object_heap_allocate(&driver_data->buffer_heap);
-	buffer_object = BUFFER(driver_data, id);
+	id = object_heap_allocate(&v4l2_request->buffer_heap);
+	buffer_object = BUFFER(v4l2_request, id);
 	if (buffer_object == NULL) {
 		status = VA_STATUS_ERROR_ALLOCATION_FAILED;
 		goto error;
@@ -100,7 +100,7 @@ VAStatus RequestCreateBuffer(VADriverContextP context, VAContextID context_id,
 
 error:
 	if (buffer_object != NULL)
-		object_heap_free(&driver_data->buffer_heap,
+		object_heap_free(&v4l2_request->buffer_heap,
 				 (struct object_base *)buffer_object);
 
 complete:
@@ -109,17 +109,17 @@ complete:
 
 VAStatus RequestDestroyBuffer(VADriverContextP context, VABufferID buffer_id)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	struct object_buffer *buffer_object;
 
-	buffer_object = BUFFER(driver_data, buffer_id);
+	buffer_object = BUFFER(v4l2_request, buffer_id);
 	if (buffer_object == NULL)
 		return VA_STATUS_ERROR_INVALID_BUFFER;
 
 	if (buffer_object->data != NULL)
 		free(buffer_object->data);
 
-	object_heap_free(&driver_data->buffer_heap,
+	object_heap_free(&v4l2_request->buffer_heap,
 			 (struct object_base *)buffer_object);
 
 	return VA_STATUS_SUCCESS;
@@ -128,10 +128,10 @@ VAStatus RequestDestroyBuffer(VADriverContextP context, VABufferID buffer_id)
 VAStatus RequestMapBuffer(VADriverContextP context, VABufferID buffer_id,
 			  void **data_map)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	struct object_buffer *buffer_object;
 
-	buffer_object = BUFFER(driver_data, buffer_id);
+	buffer_object = BUFFER(v4l2_request, buffer_id);
 	if (buffer_object == NULL || buffer_object->data == NULL)
 		return VA_STATUS_ERROR_INVALID_BUFFER;
 
@@ -143,10 +143,10 @@ VAStatus RequestMapBuffer(VADriverContextP context, VABufferID buffer_id,
 
 VAStatus RequestUnmapBuffer(VADriverContextP context, VABufferID buffer_id)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	struct object_buffer *buffer_object;
 
-	buffer_object = BUFFER(driver_data, buffer_id);
+	buffer_object = BUFFER(v4l2_request, buffer_id);
 	if (buffer_object == NULL || buffer_object->data == NULL)
 		return VA_STATUS_ERROR_INVALID_BUFFER;
 
@@ -158,10 +158,10 @@ VAStatus RequestUnmapBuffer(VADriverContextP context, VABufferID buffer_id)
 VAStatus RequestBufferSetNumElements(VADriverContextP context,
 				     VABufferID buffer_id, unsigned int count)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	struct object_buffer *buffer_object;
 
-	buffer_object = BUFFER(driver_data, buffer_id);
+	buffer_object = BUFFER(v4l2_request, buffer_id);
 	if (buffer_object == NULL)
 		return VA_STATUS_ERROR_INVALID_BUFFER;
 
@@ -177,10 +177,10 @@ VAStatus RequestBufferInfo(VADriverContextP context, VABufferID buffer_id,
 			   VABufferType *type, unsigned int *size,
 			   unsigned int *count)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	struct object_buffer *buffer_object;
 
-	buffer_object = BUFFER(driver_data, buffer_id);
+	buffer_object = BUFFER(v4l2_request, buffer_id);
 	if (buffer_object == NULL)
 		return VA_STATUS_ERROR_INVALID_BUFFER;
 
@@ -195,7 +195,7 @@ VAStatus RequestAcquireBufferHandle(VADriverContextP context,
 				    VABufferID buffer_id,
 				    VABufferInfo *buffer_info)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	struct object_buffer *buffer_object;
 	struct object_surface *surface_object;
 	struct video_format *video_format;
@@ -203,31 +203,31 @@ VAStatus RequestAcquireBufferHandle(VADriverContextP context,
 	int export_fd;
 	int rc;
 
-	video_format = driver_data->video_format;
+	video_format = v4l2_request->video_format;
 	if (video_format == NULL)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 
 	capture_type = v4l2_type_video_capture(video_format->v4l2_mplane);
 
 	if (buffer_info->mem_type != VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME ||
-	    !video_format_is_linear(driver_data->video_format))
+	    !video_format_is_linear(v4l2_request->video_format))
 		return VA_STATUS_ERROR_UNSUPPORTED_MEMORY_TYPE;
 
-	buffer_object = BUFFER(driver_data, buffer_id);
+	buffer_object = BUFFER(v4l2_request, buffer_id);
 	if (buffer_object == NULL || buffer_object->type != VAImageBufferType)
 		return VA_STATUS_ERROR_INVALID_BUFFER;
 
 	if (buffer_object->derived_surface_id == VA_INVALID_ID)
 		return VA_STATUS_ERROR_INVALID_BUFFER;
 
-	surface_object = SURFACE(driver_data, buffer_object->derived_surface_id);
+	surface_object = SURFACE(v4l2_request, buffer_object->derived_surface_id);
 	if (surface_object == NULL)
 		return VA_STATUS_ERROR_INVALID_BUFFER;
 
 	if (surface_object->destination_buffers_count > 1)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 
-	rc = v4l2_export_buffer(driver_data->video_fd, capture_type,
+	rc = v4l2_export_buffer(context, v4l2_request->video_fd, capture_type,
 				surface_object->destination_index, O_RDONLY,
 				&export_fd, 1);
 	if (rc < 0)
@@ -245,11 +245,11 @@ VAStatus RequestAcquireBufferHandle(VADriverContextP context,
 VAStatus RequestReleaseBufferHandle(VADriverContextP context,
 	VABufferID buffer_id)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	struct object_buffer *buffer_object;
 	int export_fd;
 
-	buffer_object = BUFFER(driver_data, buffer_id);
+	buffer_object = BUFFER(v4l2_request, buffer_id);
 	if (buffer_object == NULL)
 		return VA_STATUS_ERROR_INVALID_BUFFER;
 

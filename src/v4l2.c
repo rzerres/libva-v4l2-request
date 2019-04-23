@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2018 Paul Kocialkowski <paul.kocialkowski@bootlin.com>
+ * Copyright (C) 2019 Ralf Zerres <ralf.zerres@networkx.de>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the
@@ -206,7 +207,7 @@ bool v4l2_find_format(int video_fd, unsigned int type, unsigned int pixelformat)
 	return false;
 }
 
-int v4l2_try_format(int video_fd, unsigned int type, unsigned int width,
+int v4l2_try_format(VADriverContextP context, int video_fd, unsigned int type, unsigned int width,
 		    unsigned int height, unsigned int pixelformat)
 {
 	struct v4l2_format format;
@@ -216,7 +217,7 @@ int v4l2_try_format(int video_fd, unsigned int type, unsigned int width,
 
 	rc = ioctl(video_fd, VIDIOC_TRY_FMT, &format);
 	if (rc < 0) {
-		request_log("Unable to try format for %s (type %d): %s (%d)\n",
+		v4l2_request_log_info(context, "Unable to try format for %s (type %d): %s (%d)\n",
 			buffer_type[type].name, type, strerror(errno), errno);
 		return -1;
 	}
@@ -224,7 +225,7 @@ int v4l2_try_format(int video_fd, unsigned int type, unsigned int width,
 	return 0;
 }
 
-int v4l2_set_format(int video_fd, unsigned int type, unsigned int pixelformat,
+int v4l2_set_format(VADriverContextP context, int video_fd, unsigned int type, unsigned int pixelformat,
 		    unsigned int width, unsigned int height)
 {
 	struct v4l2_format format;
@@ -234,7 +235,7 @@ int v4l2_set_format(int video_fd, unsigned int type, unsigned int pixelformat,
 
 	rc = ioctl(video_fd, VIDIOC_S_FMT, &format);
 	if (rc < 0) {
-		request_log("Unable to set format for %s (type %d): %s (%d)\n",
+		v4l2_request_log_info(context, "Unable to set format for %s (type %d): %s (%d)\n",
 			    buffer_type[type].name, type, strerror(errno), errno);
 		return -1;
 	}
@@ -242,9 +243,10 @@ int v4l2_set_format(int video_fd, unsigned int type, unsigned int pixelformat,
 	return 0;
 }
 
-int v4l2_get_format(int video_fd, unsigned int type, unsigned int *width,
-		    unsigned int *height, unsigned int *bytesperline,
-		    unsigned int *sizes, unsigned int *planes_count)
+int v4l2_get_format(VADriverContextP context,int video_fd, unsigned int type,
+		    unsigned int *width, unsigned int *height,
+		    unsigned int *bytesperline, unsigned int *sizes,
+		    unsigned int *planes_count)
 {
 	struct v4l2_format format;
 	unsigned int count;
@@ -256,7 +258,7 @@ int v4l2_get_format(int video_fd, unsigned int type, unsigned int *width,
 
 	rc = ioctl(video_fd, VIDIOC_G_FMT, &format);
 	if (rc < 0) {
-		request_log("Unable to get format for %s (type %d): %s (%d)\n",
+		v4l2_request_log_info(context, "Unable to get format for %s (type %d): %s (%d)\n",
 			    buffer_type[type].name, type, strerror(errno), errno);
 		return -1;
 	}
@@ -305,8 +307,9 @@ int v4l2_get_format(int video_fd, unsigned int type, unsigned int *width,
 	return 0;
 }
 
-int v4l2_create_buffers(int video_fd, unsigned int type,
-			unsigned int buffers_count, unsigned int *index_base)
+int v4l2_create_buffers(VADriverContextP context, int video_fd,
+			unsigned int type, unsigned int buffers_count,
+			unsigned int *index_base)
 {
 	struct v4l2_create_buffers buffers;
 	int rc;
@@ -318,14 +321,14 @@ int v4l2_create_buffers(int video_fd, unsigned int type,
 
 	rc = ioctl(video_fd, VIDIOC_G_FMT, &buffers.format);
 	if (rc < 0) {
-		request_log("Unable to get format for %s (type %d): %s (%d)\n",
+		v4l2_request_log_info(context, "Unable to get format for %s (type %d): %s (%d)\n",
 			    buffer_type[type].name, type, strerror(errno), errno);
 		return -1;
 	}
 
 	rc = ioctl(video_fd, VIDIOC_CREATE_BUFS, &buffers);
 	if (rc < 0) {
-		request_log("Unable to create %s (type %d): %s (%d)\n",
+		v4l2_request_log_info(context, "Unable to create %s (type %d): %s (%d)\n",
 			    buffer_type[type].name, type, strerror(errno), errno);
 		return -1;
 	}
@@ -336,9 +339,9 @@ int v4l2_create_buffers(int video_fd, unsigned int type,
 	return 0;
 }
 
-int v4l2_query_buffer(int video_fd, unsigned int type, unsigned int index,
-		      unsigned int *lengths, unsigned int *offsets,
-		      unsigned int buffers_count)
+int v4l2_query_buffer(VADriverContextP context, int video_fd, unsigned int type,
+		      unsigned int index, unsigned int *lengths,
+		      unsigned int *offsets, unsigned int buffers_count)
 {
 	struct v4l2_plane planes[buffers_count];
 	struct v4l2_buffer buffer;
@@ -356,7 +359,7 @@ int v4l2_query_buffer(int video_fd, unsigned int type, unsigned int index,
 
 	rc = ioctl(video_fd, VIDIOC_QUERYBUF, &buffer);
 	if (rc < 0) {
-		request_log("Unable to query %s (type %d): %s (%d)\n",
+		v4l2_request_log_info(context, "Unable to query %s (type %d): %s (%d)\n",
 			    buffer_type[type].name, type, strerror(errno), errno);
 		return -1;
 	}
@@ -380,8 +383,8 @@ int v4l2_query_buffer(int video_fd, unsigned int type, unsigned int index,
 	return 0;
 }
 
-int v4l2_request_buffers(int video_fd, unsigned int type,
-			 unsigned int buffers_count)
+int v4l2_request_buffers(VADriverContextP context, int video_fd,
+			 unsigned int type, unsigned int buffers_count)
 {
 	struct v4l2_requestbuffers buffers;
 	int rc;
@@ -393,7 +396,7 @@ int v4l2_request_buffers(int video_fd, unsigned int type,
 
 	rc = ioctl(video_fd, VIDIOC_REQBUFS, &buffers);
 	if (rc < 0) {
-		request_log("Unable to request %s (type %d): %s (%d)\n",
+		v4l2_request_log_info(context, "Unable to request %s (type %d): %s (%d)\n",
 			    buffer_type[type].name, type, strerror(errno), errno);
 		return -1;
 	}
@@ -401,9 +404,10 @@ int v4l2_request_buffers(int video_fd, unsigned int type,
 	return 0;
 }
 
-int v4l2_queue_buffer(int video_fd, int request_fd, unsigned int type,
-		      struct timeval *timestamp, unsigned int index,
-		      unsigned int size, unsigned int buffers_count)
+int v4l2_queue_buffer(VADriverContextP context, int video_fd, int request_fd,
+		      unsigned int type, struct timeval *timestamp,
+		      unsigned int index, unsigned int size,
+		      unsigned int buffers_count)
 {
 	struct v4l2_plane planes[buffers_count];
 	struct v4l2_buffer buffer;
@@ -435,7 +439,7 @@ int v4l2_queue_buffer(int video_fd, int request_fd, unsigned int type,
 
 	rc = ioctl(video_fd, VIDIOC_QBUF, &buffer);
 	if (rc < 0) {
-		request_log("Unable to queue %s (type %d): %s (%d)\n",
+		v4l2_request_log_info(context, "Unable to queue %s (type %d): %s (%d)\n",
 			    buffer_type[type].name, type, strerror(errno), errno);
 		return -1;
 	}
@@ -443,8 +447,9 @@ int v4l2_queue_buffer(int video_fd, int request_fd, unsigned int type,
 	return 0;
 }
 
-int v4l2_dequeue_buffer(int video_fd, int request_fd, unsigned int type,
-			unsigned int index, unsigned int buffers_count)
+int v4l2_dequeue_buffer(VADriverContextP context, int video_fd, int request_fd,
+			unsigned int type, unsigned int index,
+			unsigned int buffers_count)
 {
 	struct v4l2_plane planes[buffers_count];
 	struct v4l2_buffer buffer;
@@ -466,7 +471,7 @@ int v4l2_dequeue_buffer(int video_fd, int request_fd, unsigned int type,
 
 	rc = ioctl(video_fd, VIDIOC_DQBUF, &buffer);
 	if (rc < 0) {
-		request_log("Unable to dequeue %s (type %d): %s (%d)\n",
+		v4l2_request_log_info(context, "Unable to dequeue %s (type %d): %s (%d)\n",
 			    buffer_type[type].name, type, strerror(errno), errno);
 		return -1;
 	}
@@ -474,8 +479,8 @@ int v4l2_dequeue_buffer(int video_fd, int request_fd, unsigned int type,
 	return 0;
 }
 
-int v4l2_export_buffer(int video_fd, unsigned int type, unsigned int index,
-		       unsigned int flags, int *export_fds,
+int v4l2_export_buffer(VADriverContextP context, int video_fd, unsigned int type,
+		       unsigned int index, unsigned int flags, int *export_fds,
 		       unsigned int export_fds_count)
 {
 	struct v4l2_exportbuffer exportbuffer;
@@ -491,7 +496,7 @@ int v4l2_export_buffer(int video_fd, unsigned int type, unsigned int index,
 
 		rc = ioctl(video_fd, VIDIOC_EXPBUF, &exportbuffer);
 		if (rc < 0) {
-			request_log("Unable to export %s (type %d): %s (%d)\n",
+			v4l2_request_log_info(context, "Unable to export %s (type %d): %s (%d)\n",
 				    buffer_type[type].name, type, strerror(errno), errno);
 			return -1;
 		}
@@ -502,8 +507,8 @@ int v4l2_export_buffer(int video_fd, unsigned int type, unsigned int index,
 	return 0;
 }
 
-int v4l2_set_control(int video_fd, int request_fd, unsigned int id, void *data,
-		     unsigned int size)
+int v4l2_set_control(VADriverContextP context, int video_fd, int request_fd,
+		     unsigned int id, void *data, unsigned int size)
 {
 	struct v4l2_ext_control control;
 	struct v4l2_ext_controls controls;
@@ -526,7 +531,7 @@ int v4l2_set_control(int video_fd, int request_fd, unsigned int id, void *data,
 
 	rc = ioctl(video_fd, VIDIOC_S_EXT_CTRLS, &controls);
 	if (rc < 0) {
-		request_log("Unable to set control: %s (%d)\n",
+		v4l2_request_log_info(context, "Unable to set control: %s (%d)\n",
 			    strerror(errno), errno);
 		return -1;
 	}
@@ -534,7 +539,8 @@ int v4l2_set_control(int video_fd, int request_fd, unsigned int id, void *data,
 	return 0;
 }
 
-int v4l2_set_stream(int video_fd, unsigned int type, bool enable)
+int v4l2_set_stream(VADriverContextP context, int video_fd, unsigned int type,
+		    bool enable)
 {
 	enum v4l2_buf_type buf_type = type;
 	int rc;
@@ -542,7 +548,7 @@ int v4l2_set_stream(int video_fd, unsigned int type, bool enable)
 	rc = ioctl(video_fd, enable ? VIDIOC_STREAMON : VIDIOC_STREAMOFF,
 		   &buf_type);
 	if (rc < 0) {
-		request_log("Unable to %sable stream %s (type %d): %s (%d)\n",
+		v4l2_request_log_info(context, "Unable to %sable stream %s (type %d): %s (%d)\n",
 			    enable ? "en" : "dis",
 			    buffer_type[type].name, type,
 			    strerror(errno));

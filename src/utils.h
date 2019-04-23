@@ -28,11 +28,15 @@
 #define _UTILS_H_
 
 #include <libudev.h>
+#include <stdbool.h>
 #include <linux/media.h>
+#include <va/va_backend.h>
 
-//#include "media.h"
+#include "autoconfig.h"
+#include "drm_fourcc.h"
 
 #define DRIVER_LAST	-1
+
 /*
  * Structures
  */
@@ -60,23 +64,26 @@ int driver_add(struct driver *driver, struct decoder *decoder);
 void driver_delete(struct driver *driver, int id);
 int driver_extend(struct driver *driver);
 void driver_free(struct driver *driver);
-struct decoder *driver_get(struct driver *driver, int id);
-__u32 driver_get_capabilities(struct driver *driver, int id);
+struct decoder *driver_get(VADriverContextP context, struct driver *driver, int id);
+__u32 driver_get_capabilities(VADriverContextP context, struct driver *driver, int id);
 int driver_get_first_id(struct driver *driver);
 int driver_get_last_id(struct driver *driver);
 int driver_get_num_decoders(struct driver *driver);
 void driver_init(struct driver *driver);
-void driver_print(struct driver *driver, int id);
-void driver_print_all(struct driver *driver);
+void driver_print(VADriverContextP context, struct driver *driver, int id);
+void driver_print_all(VADriverContextP context, struct driver *driver);
 void driver_reduce(struct driver *driver);
 void driver_set(struct driver *driver, int id, void *decoder);
-__u32 driver_set_capabilities(struct driver *driver, int id, unsigned int capabilities);
-
-/* v4l2 request */
-void request_log(const char *format, ...);
+__u32 driver_set_capabilities(VADriverContextP context, struct driver *driver, int id, unsigned int capabilities);
 
 /* udev handling */
-char *udev_get_devpath(struct media_v2_intf_devnode *devnode);
-int udev_scan_subsystem(struct driver *driver, char *subsystem);
+char *udev_get_devpath(VADriverContextP context, struct media_v2_intf_devnode *devnode);
+int udev_scan_subsystem(VADriverContextP context, struct driver *driver, char *subsystem);
+
+/* v4l2 request */
+//bool v4l2_request_ensure_vendor_string(struct v4l2_request_data *v4l2_request);
+void v4l2_request_log_error(VADriverContextP context, const char *format, ...);
+void v4l2_request_log_info(VADriverContextP context, const char *format, ...);
+void request_log(const char *format, ...);
 
 #endif

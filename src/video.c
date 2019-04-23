@@ -22,13 +22,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include "drm_fourcc.h"
+
 #include <errno.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 
-#include <drm_fourcc.h>
+
 #include <linux/videodev2.h>
 
 #include "utils.h"

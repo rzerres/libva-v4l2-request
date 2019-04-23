@@ -27,13 +27,14 @@
 #define _MEDIA_H_
 
 #include <linux/media.h>
+#include <va/va_backend.h>
 
 struct driver;
 
-int media_request_alloc(int media_fd);
-int media_request_reinit(int request_fd);
-int media_request_queue(int request_fd);
-int media_request_wait_completion(int request_fd);
-int media_scan_topology(struct driver *driver, int id, const char *path);
+int media_request_alloc(VADriverContextP context, int media_fd);
+int media_request_reinit(VADriverContextP context, int request_fd);
+int media_request_queue(VADriverContextP context, int request_fd);
+int media_request_wait_completion(VADriverContextP context, int request_fd);
+int media_scan_topology(VADriverContextP context, struct driver *driver, int id, const char *path);
 
 #endif

@@ -35,11 +35,12 @@
 #include <sys/mman.h>
 
 #include <linux/videodev2.h>
-#include <mpeg2-ctrls.h>
 
+#include "mpeg2-ctrls.h"
 #include "v4l2.h"
 
-int mpeg2_set_controls(struct request_data *driver_data,
+int mpeg2_set_controls(VADriverContextP context,
+		       struct v4l2_request_data *v4l2_request,
 		       struct object_context *context_object,
 		       struct object_surface *surface_object)
 {
@@ -102,7 +103,7 @@ int mpeg2_set_controls(struct request_data *driver_data,
 	slice_params.quantiser_scale_code = slice->quantiser_scale_code;
 
 	forward_reference_surface =
-		SURFACE(driver_data, picture->forward_reference_picture);
+		SURFACE(v4l2_request, picture->forward_reference_picture);
 	if (forward_reference_surface == NULL)
 		forward_reference_surface = surface_object;
 
@@ -110,14 +111,14 @@ int mpeg2_set_controls(struct request_data *driver_data,
 	slice_params.forward_ref_ts = timestamp;
 
 	backward_reference_surface =
-		SURFACE(driver_data, picture->backward_reference_picture);
+		SURFACE(v4l2_request, picture->backward_reference_picture);
 	if (backward_reference_surface == NULL)
 		backward_reference_surface = surface_object;
 
 	timestamp = v4l2_timeval_to_ns(&backward_reference_surface->timestamp);
 	slice_params.backward_ref_ts = timestamp;
 
-	rc = v4l2_set_control(driver_data->video_fd, surface_object->request_fd,
+	rc = v4l2_set_control(context, v4l2_request->video_fd, surface_object->request_fd,
 			      V4L2_CID_MPEG_VIDEO_MPEG2_SLICE_PARAMS,
 			      &slice_params, sizeof(slice_params));
 	if (rc < 0)
@@ -144,7 +145,8 @@ int mpeg2_set_controls(struct request_data *driver_data,
 				iqmatrix->chroma_non_intra_quantiser_matrix[i];
 		}
 
-		rc = v4l2_set_control(driver_data->video_fd,
+		rc = v4l2_set_control(context,
+				      v4l2_request->video_fd,
 				      surface_object->request_fd,
 				      V4L2_CID_MPEG_VIDEO_MPEG2_QUANTIZATION,
 				      &quantization, sizeof(quantization));

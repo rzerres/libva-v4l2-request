@@ -50,7 +50,7 @@
 
 #include "autoconfig.h"
 
-static VAStatus codec_store_buffer(struct request_data *driver_data,
+static VAStatus codec_store_buffer(struct v4l2_request_data *v4l2_request,
 				   VAProfile profile,
 				   struct object_surface *surface_object,
 				   struct object_buffer *buffer_object)
@@ -164,8 +164,9 @@ static VAStatus codec_store_buffer(struct request_data *driver_data,
 	return VA_STATUS_SUCCESS;
 }
 
-static VAStatus codec_set_controls(struct request_data *driver_data,
-				   struct object_context *context,
+static VAStatus codec_set_controls(VADriverContextP context,
+				   struct v4l2_request_data *v4l2_request,
+				   struct object_context *context_object,
 				   VAProfile profile,
 				   struct object_surface *surface_object)
 {
@@ -174,7 +175,7 @@ static VAStatus codec_set_controls(struct request_data *driver_data,
 	switch (profile) {
 	case VAProfileMPEG2Simple:
 	case VAProfileMPEG2Main:
-		rc = mpeg2_set_controls(driver_data, context, surface_object);
+		rc = mpeg2_set_controls(context, v4l2_request, context_object, surface_object);
 		if (rc < 0)
 			return VA_STATUS_ERROR_OPERATION_FAILED;
 		break;
@@ -184,13 +185,13 @@ static VAStatus codec_set_controls(struct request_data *driver_data,
 	case VAProfileH264ConstrainedBaseline:
 	case VAProfileH264MultiviewHigh:
 	case VAProfileH264StereoHigh:
-		rc = h264_set_controls(driver_data, context, surface_object);
+		rc = h264_set_controls(context, v4l2_request, context_object, surface_object);
 		if (rc < 0)
 			return VA_STATUS_ERROR_OPERATION_FAILED;
 		break;
 
 	case VAProfileHEVCMain:
-		rc = h265_set_controls(driver_data, context, surface_object);
+		rc = h265_set_controls(context,v4l2_request, context_object, surface_object);
 		if (rc < 0)
 			return VA_STATUS_ERROR_OPERATION_FAILED;
 		break;
@@ -205,15 +206,15 @@ static VAStatus codec_set_controls(struct request_data *driver_data,
 VAStatus RequestBeginPicture(VADriverContextP context, VAContextID context_id,
 			     VASurfaceID surface_id)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	struct object_context *context_object;
 	struct object_surface *surface_object;
 
-	context_object = CONTEXT(driver_data, context_id);
+	context_object = CONTEXT(v4l2_request, context_id);
 	if (context_object == NULL)
 		return VA_STATUS_ERROR_INVALID_CONTEXT;
 
-	surface_object = SURFACE(driver_data, surface_id);
+	surface_object = SURFACE(v4l2_request, surface_id);
 	if (surface_object == NULL)
 		return VA_STATUS_ERROR_INVALID_SURFACE;
 
@@ -229,7 +230,7 @@ VAStatus RequestBeginPicture(VADriverContextP context, VAContextID context_id,
 VAStatus RequestRenderPicture(VADriverContextP context, VAContextID context_id,
 			      VABufferID *buffers_ids, int buffers_count)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	struct object_context *context_object;
 	struct object_config *config_object;
 	struct object_surface *surface_object;
@@ -237,25 +238,25 @@ VAStatus RequestRenderPicture(VADriverContextP context, VAContextID context_id,
 	int rc;
 	int i;
 
-	context_object = CONTEXT(driver_data, context_id);
+	context_object = CONTEXT(v4l2_request, context_id);
 	if (context_object == NULL)
 		return VA_STATUS_ERROR_INVALID_CONTEXT;
 
-	config_object = CONFIG(driver_data, context_object->config_id);
+	config_object = CONFIG(v4l2_request, context_object->config_id);
 	if (config_object == NULL)
 		return VA_STATUS_ERROR_INVALID_CONFIG;
 
 	surface_object =
-		SURFACE(driver_data, context_object->render_surface_id);
+		SURFACE(v4l2_request, context_object->render_surface_id);
 	if (surface_object == NULL)
 		return VA_STATUS_ERROR_INVALID_SURFACE;
 
 	for (i = 0; i < buffers_count; i++) {
-		buffer_object = BUFFER(driver_data, buffers_ids[i]);
+		buffer_object = BUFFER(v4l2_request, buffers_ids[i]);
 		if (buffer_object == NULL)
 			return VA_STATUS_ERROR_INVALID_BUFFER;
 
-		rc = codec_store_buffer(driver_data, config_object->profile,
+		rc = codec_store_buffer(v4l2_request, config_object->profile,
 					surface_object, buffer_object);
 		if (rc != VA_STATUS_SUCCESS)
 			return rc;
@@ -266,7 +267,7 @@ VAStatus RequestRenderPicture(VADriverContextP context, VAContextID context_id,
 
 VAStatus RequestEndPicture(VADriverContextP context, VAContextID context_id)
 {
-	struct request_data *driver_data = context->pDriverData;
+	struct v4l2_request_data *v4l2_request = context->pDriverData;
 	struct object_context *context_object;
 	struct object_config *config_object;
 	struct object_surface *surface_object;
@@ -276,23 +277,23 @@ VAStatus RequestEndPicture(VADriverContextP context, VAContextID context_id)
 	VAStatus status;
 	int rc;
 
-	video_format = driver_data->video_format;
+	video_format = v4l2_request->video_format;
 	if (video_format == NULL)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 
 	output_type = v4l2_type_video_output(video_format->v4l2_mplane);
 	capture_type = v4l2_type_video_capture(video_format->v4l2_mplane);
 
-	context_object = CONTEXT(driver_data, context_id);
+	context_object = CONTEXT(v4l2_request, context_id);
 	if (context_object == NULL)
 		return VA_STATUS_ERROR_INVALID_CONTEXT;
 
-	config_object = CONFIG(driver_data, context_object->config_id);
+	config_object = CONFIG(v4l2_request, context_object->config_id);
 	if (config_object == NULL)
 		return VA_STATUS_ERROR_INVALID_CONFIG;
 
 	surface_object =
-		SURFACE(driver_data, context_object->render_surface_id);
+		SURFACE(v4l2_request, context_object->render_surface_id);
 	if (surface_object == NULL)
 		return VA_STATUS_ERROR_INVALID_SURFACE;
 
@@ -300,25 +301,25 @@ VAStatus RequestEndPicture(VADriverContextP context, VAContextID context_id)
 
 	request_fd = surface_object->request_fd;
 	if (request_fd < 0) {
-		request_fd = media_request_alloc(driver_data->media_fd);
+		request_fd = media_request_alloc(context, v4l2_request->media_fd);
 		if (request_fd < 0)
 			return VA_STATUS_ERROR_OPERATION_FAILED;
 
 		surface_object->request_fd = request_fd;
 	}
 
-	rc = codec_set_controls(driver_data, context_object,
+	rc = codec_set_controls(context, v4l2_request, context_object,
 				config_object->profile, surface_object);
 	if (rc != VA_STATUS_SUCCESS)
 		return rc;
 
-	rc = v4l2_queue_buffer(driver_data->video_fd, -1, capture_type, NULL,
+	rc = v4l2_queue_buffer(context, v4l2_request->video_fd, -1, capture_type, NULL,
 			       surface_object->destination_index, 0,
 			       surface_object->destination_buffers_count);
 	if (rc < 0)
 		return VA_STATUS_ERROR_OPERATION_FAILED;
 
-	rc = v4l2_queue_buffer(driver_data->video_fd, request_fd, output_type,
+	rc = v4l2_queue_buffer(context, v4l2_request->video_fd, request_fd, output_type,
 			       &surface_object->timestamp,
 			       surface_object->source_index,
 			       surface_object->slices_size, 1);
